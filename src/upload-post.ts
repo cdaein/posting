@@ -27,9 +27,6 @@ export async function uploadPost(
       `Processing ${bold(path.basename(postFolderPath))} (current time: ${new Date().toLocaleString()})`,
     );
 
-    // Read the files in the folder
-    // const files = fs.readdirSync(postFolderPath);
-
     // check settings.json
     const settingsPath = path.join(postFolderPath, "settings.json");
     if (!fs.existsSync(settingsPath)) {
@@ -88,7 +85,6 @@ export async function uploadPost(
         console.log(status);
       } else if (platform === "twitter") {
         console.log(`Uploading to Twitter..`);
-        // FIX: global "social" command doesn't work due to twitter library
         const status = await uploadTwitter(postFolderPath, settings, dev);
         console.log(status);
       }

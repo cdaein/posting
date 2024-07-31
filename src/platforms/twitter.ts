@@ -22,7 +22,7 @@ export async function uploadTwitter(
 ) {
   const client = new TwitterApi(tokens);
 
-  const { postType, bodyText, filename } = settings;
+  const { postType, bodyText, filenames } = settings;
 
   if (dev) {
     return "DEV MODE TWITTER";
@@ -32,18 +32,18 @@ export async function uploadTwitter(
     if (postType === "text") {
       const status = await client.v2.tweet(bodyText);
       return status;
-    } else if (postType === "image" || postType === "video") {
-      const mediaId = await client.v1.uploadMedia(
-        path.join(folderPath, filename),
-      );
+    } else {
+      const mediaIds: string[] = [];
+      for (const filename of filenames) {
+        const mediaId = await client.v1.uploadMedia(
+          path.join(folderPath, filename),
+        );
+        mediaIds.push(mediaId);
+      }
       const status = await client.v1.tweet(bodyText, {
-        media_ids: [mediaId],
+        media_ids: mediaIds,
       });
       return status;
-    } else {
-      throw new Error(
-        `Error uploading to Twitter: Not a supported postType ${postType}`,
-      );
     }
   } catch (e) {
     throw new Error(`Error uploading to Twitter \n${e}`);

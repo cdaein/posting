@@ -34,7 +34,8 @@ There are three ways that Posting detects scheduled posts. First, when it starts
 Currently, Posting only supports single image/video posts.
 
 - Mastodon
-- ~~Instagram~~ (not working at the moment)
+- ~~Instagram~~
+  - IG API doesn't work as I expect it to.
 - Threads
   - Threads API uses `curl` to download media files so Posting uses Firebase Storage to create public URLs. Free tier should be good enough.
 - Twitter

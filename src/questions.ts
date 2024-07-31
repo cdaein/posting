@@ -20,7 +20,7 @@ import { loadConfig } from "./utils";
 const userConfig = await loadConfig(defaultConfig, "../user.config.json");
 
 const platforms: Choice[] = [
-  { title: "instagram", value: "instagram", disabled: true },
+  // { title: "instagram", value: "instagram", disabled: true },
   { title: "mastodon", value: "mastodon" },
   { title: "threads", value: "threads" },
   { title: "twitter", value: "twitter" },
@@ -28,8 +28,7 @@ const platforms: Choice[] = [
 
 const postTypes: Choice[] = [
   { title: "text", value: "text" },
-  { title: "image", value: "image" },
-  { title: "video", value: "video" },
+  { title: "media", value: "media" },
 ];
 
 export const platformsQuestion: PromptObject = {
@@ -44,7 +43,9 @@ export const platformsQuestion: PromptObject = {
 // TODO: mastodon-specific
 //  - message visibility (public, unlisted, follows-only, direct)
 //  - content warning
-// other platforms
+// TODO: instagram-specific
+//  -
+// all platforms
 //  - check image/video dimmensions and durations/fps/etc.
 //  - (maybe, ask at the end)
 
@@ -97,74 +98,71 @@ const getCommonFormats = (...lists: string[][]) => {
   );
 };
 
-export const filesQuestionFn = (
+export const multiFilesQuestionFn = (
   platforms: Platform[],
   postType: PostType,
-): PromptObject[] => {
-  return [
-    {
-      type: () => (postType === "image" ? "text" : null),
-      name: "imagePath",
-      message: "Image file path",
-      validate: (value: string) => {
-        const trimmed = value.trim();
-        if (!fs.existsSync(trimmed)) {
-          return "Please enter a valid file path";
-        }
-
-        const commonFormats = getCommonFormats(
-          ...platforms.map((platform) => {
-            if (platform === "mastodon") {
-              return MASTODON_IMAGE_FORMATS;
-            } else if (platform === "threads") {
-              return THREADS_IMAGE_FORMATS;
-            } else if (platform === "twitter") {
-              return TWITTER_IMAGE_FORMATS;
-            }
-            return [];
-          }),
-        );
-
-        // TODO: check file metadata (dimensions, etc.)
-        // REVIEW: if not supported, maybe encode on the fly?
-        if (!commonFormats.includes(path.extname(trimmed).slice(1))) {
-          return `Please use a common file type for ${platforms.join(", ")}: ${commonFormats.join(", ")}`;
-        }
-
-        return true;
-      },
+  maxAttachments: number,
+  numAttached = 0,
+): PromptObject => {
+  return {
+    type: () => (postType === "media" ? "text" : null),
+    name: "mediaPath",
+    message: () => {
+      if (numAttached === 0) {
+        return `Media file path (${maxAttachments - numAttached} remaining)`;
+      } else {
+        // show "leave blank" after first attachment
+        return `Media file path (${maxAttachments - numAttached} remaining). Leave blank to skip.`;
+      }
     },
-    {
-      type: () => (postType === "video" ? "text" : null),
-      name: "videoPath",
-      message: "Video file path",
-      validate: (value: string) => {
-        const trimmed = value.trim();
-        if (!fs.existsSync(trimmed)) {
-          return "Please enter a valid file path";
-        }
+    validate: (value: string) => {
+      const trimmed = value.trim();
 
-        const commonFormats = getCommonFormats(
-          ...platforms.map((platform) => {
-            if (platform === "mastodon") {
-              return MASTODON_VIDEO_FORMATS;
-            } else if (platform === "threads") {
-              return THREADS_VIDEO_FORMATS;
-            } else if (platform === "twitter") {
-              return TWITTER_VIDEO_FORMATS;
-            }
-            return [];
-          }),
-        );
+      // at least 1 attachment is required
+      if (numAttached === 0 && !fs.existsSync(trimmed)) {
+        return "Please enter a valid file path";
+      }
 
-        if (!commonFormats.includes(path.extname(trimmed).slice(1))) {
-          return `Please use a common file type for ${platforms.join(", ")}: ${commonFormats.join(", ")}`;
-        }
-
+      // 2nd+ attachment is optional. if blank, move on.
+      if (numAttached >= 1 && trimmed.length === 0) {
         return true;
-      },
+      }
+
+      const commonImageFormats = getCommonFormats(
+        ...platforms.map((platform) => {
+          if (platform === "mastodon") {
+            return MASTODON_IMAGE_FORMATS;
+          } else if (platform === "threads") {
+            return THREADS_IMAGE_FORMATS;
+          } else if (platform === "twitter") {
+            return TWITTER_IMAGE_FORMATS;
+          }
+          return [];
+        }),
+      );
+
+      const commonVideoFormats = getCommonFormats(
+        ...platforms.map((platform) => {
+          if (platform === "mastodon") {
+            return MASTODON_VIDEO_FORMATS;
+          } else if (platform === "threads") {
+            return THREADS_VIDEO_FORMATS;
+          } else if (platform === "twitter") {
+            return TWITTER_VIDEO_FORMATS;
+          }
+          return [];
+        }),
+      );
+
+      const commonFormats = [...commonImageFormats, ...commonVideoFormats];
+
+      if (!commonFormats.includes(path.extname(trimmed).slice(1))) {
+        return `Please use a common file type for ${platforms.join(", ")}: ${commonFormats.join(", ")}`;
+      }
+
+      return true;
     },
-  ];
+  };
 };
 
 export const dateQuestion: PromptObject = {

@@ -1,23 +1,29 @@
 import async from "async";
 import { Command } from "commander";
 import kleur from "kleur";
-import path from "path";
-import { TIME_PAST_THRESHOLD, TIME_FUTURE_THRESHOLD } from "./constants";
-import { initFirebase } from "./storages/firebase";
-import { uploadPost } from "./upload-post";
-import { watchStart } from "./watch-folder";
-import { Config, EnvVars, Platform, PostType } from "./types";
 import fs from "node:fs";
+import path from "path";
 import prompts from "prompts";
+import {
+  MASTODON_MAX_ATTACHMENTS,
+  THREADS_MAX_ATTACHMENTS,
+  TIME_FUTURE_THRESHOLD,
+  TIME_PAST_THRESHOLD,
+  TWITTER_MAX_ATTACHMENTS,
+} from "./constants";
+import { processFolder } from "./process-folder";
 import {
   bodyTextQuestionFn,
   dateQuestion,
-  filesQuestionFn,
+  multiFilesQuestionFn,
   platformsQuestion,
   postTypeQuestion,
-} from "./create-schedule";
+} from "./questions";
+import { initFirebase } from "./storages/firebase";
+import { Config, EnvVars, Platform, PostType } from "./types";
+import { uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
-import { processFolder } from "./process-folder";
+import { watchStart } from "./watch-folder";
 
 const { red, yellow } = kleur;
 
@@ -41,20 +47,46 @@ export function initCreateCommand(program: Command, watchDir: string) {
       const postType: PostType = postTypeAnswer.postType;
 
       // text post needs text body
+      // REVIEW: ask this later only if there's no media attachment
+      // then, i can skip this check and postType question.
       const bodyTextAnswer = await prompts(
         bodyTextQuestionFn(platforms, postType),
         promptOptions,
       );
       const bodyText = bodyTextAnswer.bodyText;
 
-      // TODO: use while loop to get multiple file paths
-      // (first, need to update posting logic to each platform)
-      const filesAnswer = await prompts(
-        filesQuestionFn(platforms, postType),
-        promptOptions,
+      // ask for multiple file paths
+      const filePaths: string[] = [];
+      // minimum of all platforms max attachments
+      const maxAttachments = Math.min(
+        ...platforms.map((platform) => {
+          if (platform === "mastodon") return MASTODON_MAX_ATTACHMENTS;
+          else if (platform === "threads") return THREADS_MAX_ATTACHMENTS;
+          else if (platform === "twitter") return TWITTER_MAX_ATTACHMENTS;
+          return 1;
+        }),
       );
-      const { imagePath, videoPath } = filesAnswer;
-      const filePath = imagePath || videoPath;
+      // ask files to attach until answer is empty
+      let numAttached = 0;
+      let askMoreAttachment = true;
+      while (numAttached < maxAttachments && askMoreAttachment) {
+        const multiFilesAnswer = await prompts(
+          multiFilesQuestionFn(
+            platforms,
+            postType,
+            maxAttachments,
+            numAttached,
+          ),
+          promptOptions,
+        );
+        console.log(multiFilesAnswer);
+        if (multiFilesAnswer.mediaPath?.length === 0) {
+          askMoreAttachment = false;
+        } else {
+          filePaths.push(multiFilesAnswer.mediaPath);
+          numAttached++;
+        }
+      }
 
       const dateAnswer = await prompts(dateQuestion, promptOptions);
       const { postDate } = dateAnswer;
@@ -68,9 +100,10 @@ export function initCreateCommand(program: Command, watchDir: string) {
       }
       fs.mkdirSync(folderPath, { recursive: true });
 
-      // Copy media file to watchdir (rename to 001.[ext])
-      let targetFilePath = "";
-      if (filePath) {
+      // Copy media files to watchdir
+      const targetFilePaths: string[] = [];
+      for (const filePath of filePaths) {
+        let targetFilePath = "";
         const filePathTrimmed = filePath.trim();
         if (filePathTrimmed) {
           targetFilePath = path.resolve(
@@ -82,15 +115,18 @@ export function initCreateCommand(program: Command, watchDir: string) {
           );
           fs.copyFileSync(filePathTrimmed, targetFilePath);
         }
+        targetFilePaths.push(targetFilePath);
       }
 
       // Create settings.json file in the scheduled post folder
+      // TODO: use yaml or toml for user friendliness
       // REVIEW: any platform-specific settings to add?
       const settings = {
         postType,
         platforms,
         bodyText,
-        filename: path.basename(targetFilePath),
+        // filename: path.basename(targetFilePath),
+        filenames: targetFilePaths.map((filePath) => path.basename(filePath)),
       };
       const settingsString = JSON.stringify(settings, null, 2);
       fs.writeFileSync(

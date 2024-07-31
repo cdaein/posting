@@ -6,19 +6,27 @@ import {
   StorageReference,
 } from "firebase/storage";
 import path from "node:path";
-import { THREADS_API_URL } from "../constants";
+import { THREADS_API_URL, THREADS_IMAGE_FORMATS } from "../constants";
 import { uploadFirebase } from "../storages/firebase";
 import { Config, PostSettings } from "../types";
 
-export type ThreadsMediaType = "TEXT" | "IMAGE" | "VIDEO";
+export type ThreadsMediaType = "TEXT" | "IMAGE" | "VIDEO" | "CAROUSEL";
 
 export type ThreadsMediaData = {
+  is_carousel_item?: boolean;
   media_type: ThreadsMediaType;
+  /** conainter IDs for carousel post children. single string joined by comma. */
+  children?: string;
   text?: string;
   /** must be a public URL */
   image_url?: string;
   /** must be a public URL */
   video_url?: string;
+  access_token: string;
+};
+
+export type ThreadsPublishData = {
+  creation_id: string;
   access_token: string;
 };
 
@@ -45,58 +53,106 @@ export async function uploadThreads(
   const USER_ID = process.env.THREADS_USER_ID!;
   const ACCESS_TOKEN = process.env.THREADS_ACCESS_TOKEN!;
 
-  const { postType, bodyText, filename } = settings;
+  const { postType, bodyText, filenames } = settings;
 
-  const localFilePath = path.join(folderPath, filename);
-
-  let storageRef: StorageReference;
-  let downloadUrl: string = "";
-
-  if (postType !== "text") {
-    console.log("Uploading media file to Firebase Storage..");
-    try {
-      ({ storageRef, downloadUrl } = await uploadFirebase(
-        storage,
-        firebaseUid,
-        localFilePath,
-      ));
-    } catch (e) {
-      throw new Error(`Error uploading to Firebase \n${e}`);
-    }
-  }
-
-  const mediaData: ThreadsMediaData = {
-    media_type: postType.toUpperCase() as ThreadsMediaType,
-    ...(postType === "image"
-      ? { image_url: downloadUrl }
-      : postType === "video"
-        ? { video_url: downloadUrl }
-        : {}),
-    text: bodyText,
-    access_token: ACCESS_TOKEN,
-  };
+  const storageRefs: StorageReference[] = [];
+  const downloadUrls: string[] = [];
 
   if (dev) {
     return "DEV MODE THREADS";
   }
 
-  console.log("Creating media container..");
-  const mediaContainerID = await createMediaContainer(USER_ID, mediaData);
-  const publishData = {
-    creation_id: mediaContainerID,
-    access_token: ACCESS_TOKEN,
-  };
+  let publishData: ThreadsPublishData;
+
+  if (postType === "text") {
+    // 1. text only post
+    const mediaContainerID = await createMediaContainer(USER_ID, {
+      media_type: "TEXT",
+      text: bodyText,
+      access_token: ACCESS_TOKEN,
+    });
+    publishData = {
+      creation_id: mediaContainerID,
+      access_token: ACCESS_TOKEN,
+    };
+  } else {
+    if (filenames.length === 1) {
+      // 2. single media post
+      console.log("Uploading media file to Firebase Storage..");
+      const localFilePath = path.join(folderPath, filenames[0]);
+      const { storageRef, downloadUrl } = await uploadFirebase(
+        storage,
+        firebaseUid,
+        localFilePath,
+      );
+      storageRefs.push(storageRef);
+      downloadUrls.push(downloadUrl);
+
+      const ext = path.extname(filenames[0]);
+      const mediaContainerID = await createMediaContainer(USER_ID, {
+        media_type: THREADS_IMAGE_FORMATS.includes(ext) ? "IMAGE" : "VIDEO",
+        ...(THREADS_IMAGE_FORMATS.includes(ext)
+          ? { image_url: downloadUrls[0] }
+          : { video_url: downloadUrls[0] }),
+        text: bodyText,
+        access_token: ACCESS_TOKEN,
+      });
+      publishData = {
+        creation_id: mediaContainerID,
+        access_token: ACCESS_TOKEN,
+      };
+    } else {
+      // 3. carousel post
+      const mediaContainerIDs: string[] = [];
+      console.log("Uploading media files to Firebase Storage..");
+      for (const filename of filenames) {
+        // 3.a. upload
+        const localFilePath = path.join(folderPath, filename);
+        const { storageRef, downloadUrl } = await uploadFirebase(
+          storage,
+          firebaseUid,
+          localFilePath,
+        );
+        storageRefs.push(storageRef);
+        downloadUrls.push(downloadUrl);
+        // 3.b. create item container IDs
+        const ext = path.extname(filenames[0]);
+        const mediaContainerID = await createMediaContainer(USER_ID, {
+          is_carousel_item: true,
+          media_type: THREADS_IMAGE_FORMATS.includes(ext) ? "IMAGE" : "VIDEO",
+          ...(THREADS_IMAGE_FORMATS.includes(ext)
+            ? { image_url: downloadUrls[0] }
+            : { video_url: downloadUrls[0] }),
+          text: bodyText,
+          access_token: ACCESS_TOKEN,
+        });
+        mediaContainerIDs.push(mediaContainerID);
+      }
+      // 3.c. create carousel media container ID
+      const carouselContainerID = await createMediaContainer(USER_ID, {
+        media_type: "CAROUSEL",
+        children: mediaContainerIDs.join(","),
+        text: bodyText,
+        access_token: ACCESS_TOKEN,
+      });
+      publishData = {
+        creation_id: carouselContainerID,
+        access_token: ACCESS_TOKEN,
+      };
+    }
+  }
+
   console.log("Publishing on Threads..");
   const status = await axios
     .post(`${THREADS_API_URL}/${USER_ID}/threads_publish`, null, {
       params: publishData,
     })
     .then(async (res) => {
-      if (postType !== "text") {
-        // delete file from firebase storage
+      // delete files from firebase storage
+      for (const storageRef of storageRefs) {
         await deleteObject(storageRef);
-        console.log("Deleted media file from Firebase Storage");
       }
+      console.log("Deleted media file(s) from Firebase Storage");
       console.log("Published to Threads");
 
       // res.data.id is mediaId

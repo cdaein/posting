@@ -2,25 +2,40 @@ import axios from "axios";
 import { Config, PostSettings } from "../types";
 import path from "node:path";
 import "dotenv/config";
-import { deleteObject, FirebaseStorage } from "firebase/storage";
-import { INSTAGRAM_API_URL } from "../constants";
+import {
+  deleteObject,
+  FirebaseStorage,
+  StorageReference,
+} from "firebase/storage";
+import {
+  INSTAGRAM_API_URL,
+  INSTAGRAM_IMAGE_FORMATS,
+  INSTAGRAM_VIDEO_FORMATS,
+} from "../constants";
 import { uploadFirebase } from "../storages/firebase";
 
-export type InstagramMediaType = "REELS" | "IMAGE";
+export type InstagramMediaType = "REELS" | "VIDEO" | "CAROUSEL";
 
 export type InstagramMediaData = {
-  /** Include with Reel post. Returned media_type is "VIDEO" */
+  is_carousel_item?: boolean;
+  /** REELS for a single video post. VIDEO for carousel video item */
   media_type?: InstagramMediaType;
-  // text?: string;
+  children?: string;
   caption?: string;
   /** must be a public URL */
   image_url?: string;
-  /** must be a public URL */
+  /** for REELS only. must be a public URL */
   video_url?: string;
   /** long-lived access token */
   access_token: string;
 };
 
+type InstagramPublishData = {
+  creation_id: string;
+  access_token: string;
+};
+
+// https://developers.facebook.com/docs/instagram/platform/instagram-api/content-publishing
 export async function uploadInstagram(
   folderPath: string,
   settings: PostSettings,
@@ -32,44 +47,95 @@ export async function uploadInstagram(
   const USER_ID = process.env.INSTAGRAM_USER_ID!;
   const ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN!;
 
-  const { postType, bodyText, filename } = settings;
+  const { postType, bodyText, filenames } = settings;
 
-  const localFilePath = path.join(folderPath, filename);
-
-  console.log("Uploading media file to Firebase Storage..");
-  const firebaseResponse = await uploadFirebase(
-    storage,
-    firebaseUid,
-    localFilePath,
-  );
-  const { storageRef, downloadUrl } = firebaseResponse;
-
-  const mediaData: InstagramMediaData = {
-    // media_type: "PHOTO",
-    ...(postType === "video" ? { media_type: "REELS" } : {}),
-    ...(postType === "image"
-      ? { image_url: downloadUrl }
-      : postType === "video"
-        ? { video_url: downloadUrl }
-        : {}),
-    caption: bodyText,
-    access_token: ACCESS_TOKEN,
-  };
+  const storageRefs: StorageReference[] = [];
+  const downloadUrls: string[] = [];
 
   if (dev) {
     return "DEV MODE INSTAGRAM";
   }
 
-  console.log("Creating media container..");
-  const mediaContainerID = await createMediaContainer(USER_ID, mediaData);
-  console.log({ mediaContainerID });
+  if (postType === "text") {
+    console.log(`Instagram does not support text-only post. Skipping..`);
+    return;
+  }
 
-  const publishData = {
-    creation_id: mediaContainerID,
-    access_token: ACCESS_TOKEN,
-  };
+  let publishData: InstagramPublishData;
+
+  if (filenames.length === 1) {
+    // 1. single media post
+    console.log("Uploading media file to Firebase Storage..");
+    const localFilePath = path.join(folderPath, filenames[0]);
+    const { storageRef, downloadUrl } = await uploadFirebase(
+      storage,
+      firebaseUid,
+      localFilePath,
+    );
+    storageRefs.push(storageRef);
+    downloadUrls.push(downloadUrl);
+
+    const ext = path.extname(filenames[0]).toLowerCase();
+    const mediaContainerID = await createMediaContainer(USER_ID, {
+      ...(INSTAGRAM_VIDEO_FORMATS.includes(ext) ? { media_type: "REELS" } : {}),
+      // NOTE: IG API doc says, REELS should have video_url, but got an error with missing image_url
+      // terrible, terrible API to use..
+      image_url: downloadUrls[0],
+      // ...(INSTAGRAM_IMAGE_FORMATS.includes(ext)
+      //   ? { image_url: downloadUrls[0] }
+      //   : INSTAGRAM_VIDEO_FORMATS.includes(ext)
+      //     ? { video_url: downloadUrls[0] }
+      //     : {}),
+      caption: bodyText,
+      access_token: ACCESS_TOKEN,
+    });
+    publishData = {
+      creation_id: mediaContainerID,
+      access_token: ACCESS_TOKEN,
+    };
+  } else {
+    // 2. carousel post
+    const mediaContainerIDs: string[] = [];
+    console.log("Uploading media files to Firebase Storage..");
+    for (const filename of filenames) {
+      // 2.a. upload
+      const localFilePath = path.join(folderPath, filename);
+      const { storageRef, downloadUrl } = await uploadFirebase(
+        storage,
+        firebaseUid,
+        localFilePath,
+      );
+      storageRefs.push(storageRef);
+      downloadUrls.push(downloadUrl);
+      // 2.b. create item container IDs
+      const ext = path.extname(filenames[0]);
+      const mediaContainerID = await createMediaContainer(USER_ID, {
+        is_carousel_item: true,
+        ...(INSTAGRAM_VIDEO_FORMATS.includes(ext)
+          ? { media_type: "VIDEO" }
+          : {}),
+        ...(INSTAGRAM_IMAGE_FORMATS.includes(ext)
+          ? { image_url: downloadUrls[0] }
+          : { video_url: downloadUrls[0] }),
+        caption: bodyText,
+        access_token: ACCESS_TOKEN,
+      });
+      mediaContainerIDs.push(mediaContainerID);
+    }
+    // 2.c. create carousel media container ID
+    const carouselContainerID = await createMediaContainer(USER_ID, {
+      media_type: "CAROUSEL",
+      children: mediaContainerIDs.join(","),
+      caption: bodyText,
+      access_token: ACCESS_TOKEN,
+    });
+    publishData = {
+      creation_id: carouselContainerID,
+      access_token: ACCESS_TOKEN,
+    };
+  }
+
   console.log("Publishing on Instagram..");
-
   const status = await axios
     .post(`${INSTAGRAM_API_URL}/${USER_ID}/media_publish`, null, {
       // .post(`${FACEBOOK_API_URL}/media_publish`, null, {
@@ -77,10 +143,11 @@ export async function uploadInstagram(
     })
     .then(async (res) => {
       // delete file from firebase storage
-      await deleteObject(storageRef);
-      console.log("Deleted media file from Firebase Storage");
+      for (const storageRef of storageRefs) {
+        await deleteObject(storageRef);
+      }
+      console.log("Deleted media file(s) from Firebase Storage");
       console.log("Published to Instagram");
-
       // res.data.id is mediaId
       return res.data;
     })

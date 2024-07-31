@@ -14,41 +14,52 @@ export async function uploadMastodon(
   settings: PostSettings,
   dev: boolean,
 ) {
-  // FIX: don't rely on process.env inside function. pass as arguments from main script.
+  // TODO: don't rely on process.env inside function. pass as arguments from main script.
   // - same with other platform files.
   const masto = createRestAPIClient({
     url: process.env.MASTODON_INSTANCE_URL!,
     accessToken: process.env.MASTODON_ACCESS_TOKEN,
   });
 
-  const { postType, bodyText, filename } = settings;
+  const { postType, bodyText, filenames } = settings;
 
-  let mediaAttachment: MediaAttachment | undefined;
+  if (dev) {
+    return { url: "DEV MODE MASTODON" };
+  }
+
+  const mediaAttachments: MediaAttachment[] = [];
+
+  for (const filename of filenames) {
+    try {
+      if (postType === "media") {
+        const file = fs.readFileSync(path.join(folderPath, filename));
+        // upload media file
+        const mediaAttachment = await masto.v2.media.create({
+          file: new Blob([file]),
+          // description: "alt text", // TODO: alt text support
+        });
+        mediaAttachments.push(mediaAttachment);
+      }
+    } catch (e) {
+      throw new Error(`Error uploading media to Mastoton \n${e}`);
+    }
+  }
 
   try {
-    if (dev) {
-      return { url: "DEV MODE MASTODON" };
-    }
-
-    if (postType === "image" || postType === "video") {
-      const file = fs.readFileSync(path.join(folderPath, filename));
-      mediaAttachment = await masto.v2.media.create({
-        file: new Blob([file]),
-        // TODO: alt text support
-        // description: "alt text",
-      });
-    }
-
     // publish
     const status = await masto.v1.statuses.create({
       status: bodyText,
       visibility: "public",
       // conditionally add mediaIds
-      ...(mediaAttachment ? { mediaIds: [mediaAttachment?.id] } : {}),
+      ...(mediaAttachments.length > 0
+        ? {
+            mediaIds: mediaAttachments.map((media) => media.id),
+          }
+        : {}),
     });
 
     return { url: status.url };
   } catch (e) {
-    throw new Error(`Error uploading to Mastodon \n${e}`);
+    throw new Error(`Error publishing to Mastodon \n${e}`);
   }
 }

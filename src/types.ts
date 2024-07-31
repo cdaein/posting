@@ -21,13 +21,14 @@ export type Config = {
 
 export type Platform = "instagram" | "mastodon" | "threads" | "twitter";
 
-export type PostType = "text" | "image" | "video";
+export type PostType = "text" | "media";
 
 /** User-generated post settings. Normally, it comes from `social create` command. */
 export type PostSettings = {
   postType: PostType;
   platforms: Platform[];
   bodyText: string;
-  /** File name of image or video */
-  filename: string;
+  /** File names of image or video */
+  filenames: string[];
+  // filename: string;
 };
