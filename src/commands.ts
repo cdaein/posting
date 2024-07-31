@@ -79,7 +79,6 @@ export function initCreateCommand(program: Command, watchDir: string) {
           ),
           promptOptions,
         );
-        console.log(multiFilesAnswer);
         if (multiFilesAnswer.mediaPath?.length === 0) {
           askMoreAttachment = false;
         } else {
