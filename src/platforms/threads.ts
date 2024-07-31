@@ -55,11 +55,15 @@ export async function uploadThreads(
 
   if (postType !== "text") {
     console.log("Uploading media file to Firebase Storage..");
-    ({ storageRef, downloadUrl } = await uploadFirebase(
-      storage,
-      firebaseUid,
-      localFilePath,
-    ));
+    try {
+      ({ storageRef, downloadUrl } = await uploadFirebase(
+        storage,
+        firebaseUid,
+        localFilePath,
+      ));
+    } catch (e) {
+      throw new Error(`Error uploading to Firebase \n${e}`);
+    }
   }
 
   const mediaData: ThreadsMediaData = {
@@ -100,7 +104,7 @@ export async function uploadThreads(
       return res.data;
     })
     .catch((e) => {
-      console.error(`Error publishing on Threads ${e}`);
+      throw new Error(`Error publishing on Threads \n${e}`);
     });
   return status;
 }
@@ -117,7 +121,7 @@ async function createMediaContainer(
       return res.data.id;
     })
     .catch((e) => {
-      console.error(`Error uploading media to Threads ${e}`);
+      throw new Error(`Error creating media container on Threads \n${e}`);
     });
 }
 

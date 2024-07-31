@@ -124,7 +124,7 @@ export function initWatchCommand(
                 await fs.promises.rename(folderPath, newFolderPath);
                 console.log(`Folder moved to ${yellow(newFolderPath)}`);
               } catch (e) {
-                throw new Error(`Error moving post folder: ${e}`);
+                throw new Error(`Error moving post folder \n${e}`);
               }
               // let async know the current task is completed
               cb();

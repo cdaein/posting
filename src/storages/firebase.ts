@@ -35,7 +35,7 @@ export async function initFirebase(envVars: EnvVars, userConfig: Config) {
     const firebaseUid = userCredential.user.uid;
     return { storage, firebaseUid };
   } catch (e) {
-    throw new Error(`Failed sign in with Firebase ${e}`);
+    throw new Error(`Failed sign in with Firebase \n${e}`);
   }
 }
 

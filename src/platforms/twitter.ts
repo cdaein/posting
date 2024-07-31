@@ -46,6 +46,6 @@ export async function uploadTwitter(
       );
     }
   } catch (e) {
-    throw new Error(`Error uploading to Twitter ${e}`);
+    throw new Error(`Error uploading to Twitter \n${e}`);
   }
 }

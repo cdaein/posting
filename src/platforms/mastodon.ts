@@ -49,6 +49,6 @@ export async function uploadMastodon(
 
     return { url: status.url };
   } catch (e) {
-    throw new Error(`Error uploading to Mastodon ${e}`);
+    throw new Error(`Error uploading to Mastodon \n${e}`);
   }
 }

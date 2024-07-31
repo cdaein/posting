@@ -113,6 +113,6 @@ async function createMediaContainer(
       if (e.response?.data) {
         console.error(e.response.data);
       }
-      throw new Error(`Error creating media container to Instagram ${e}`);
+      throw new Error(`Error creating media container to Instagram \n${e}`);
     });
 }

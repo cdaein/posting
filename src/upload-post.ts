@@ -95,6 +95,6 @@ export async function uploadPost(
     }
     return true;
   } catch (e) {
-    throw new Error(`Error in uploadPost ${e}`);
+    throw new Error(`Error in uploadPost \n${e}`);
   }
 }
