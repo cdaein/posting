@@ -1,0 +1,15 @@
+{
+  "watchDir": "~/Desktop/Scheduled Posts/",
+  "processInterval": 5,
+  "firebase": {
+    "options": {
+      "storageBucket": "",
+    }
+  },
+  "mastodon": {},
+  "threads": {
+    "keyRefreshIntervalDay": 15,
+    "lastKeyRefreshDate": null
+  },
+  "twitter": {}
+}

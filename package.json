@@ -1,0 +1,39 @@
+{
+  "name": "posting",
+  "version": "0.1.0",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "posting": "bin/index.js"
+  },
+  "scripts": {
+    "test": "vitest",
+    "watch": "tsup --watch",
+    "build": "tsc --noemit && tsup ./src/index.ts"
+  },
+  "keywords": [
+    "social-media"
+  ],
+  "author": "Daeinc",
+  "description": "Schedule social media posting with simple folder structure",
+  "dependencies": {
+    "async": "^3.2.5",
+    "axios": "^1.7.2",
+    "chokidar": "^3.6.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "firebase": "^10.12.4",
+    "kleur": "^4.1.5",
+    "masto": "^6.8.0",
+    "prompts": "^2.4.2",
+    "twitter-api-v2": "^1.17.2"
+  },
+  "devDependencies": {
+    "@types/async": "^3.2.24",
+    "@types/node": "^22.0.0",
+    "@types/prompts": "^2.4.9",
+    "tsup": "^8.2.3",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.4"
+  }
+}
