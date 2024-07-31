@@ -22,9 +22,8 @@ export type ThreadsMediaData = {
   access_token: string;
 };
 
-// const THREADS_API_URL = `https://graph.threads.net/v1.0/${USER_ID}`;
-
-// https://graph.threads.net/v1.0/[USER_ID]/threads_publish?creation_id=[MEDIA_CONTAINER_ID]&access_token=[ACCESS_TOKEN]
+// TODO: separate Firebase logic out of uploadThreads as I may change provider later?
+// - instead, take publicURL as argument that is generated outside the function
 
 /**
  * First upload image to Firebase to get public URL. Then, publish to Threads.

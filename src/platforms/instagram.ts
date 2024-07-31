@@ -21,8 +21,6 @@ export type InstagramMediaData = {
   access_token: string;
 };
 
-// const FACEBOOK_API_URL = `https://graph.facebook.com/v20.0/${USER_ID}`;
-
 export async function uploadInstagram(
   folderPath: string,
   settings: PostSettings,
@@ -45,8 +43,6 @@ export async function uploadInstagram(
     localFilePath,
   );
   const { storageRef, downloadUrl } = firebaseResponse;
-
-  console.log({ downloadUrl });
 
   const mediaData: InstagramMediaData = {
     // media_type: "PHOTO",

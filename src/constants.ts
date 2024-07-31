@@ -26,6 +26,9 @@ export const MASTODON_VIDEO_FORMATS = ["gif", "mp4", "mov", "webm", "m4v"];
 // "wav", "flac", "opus",
 export const MASTODON_AUDIO_FORMATS = ["mp4", "ogg", "aac", "m4a", "3gp"];
 
+// facebook
+// export const FACEBOOK_API_URL = `https://graph.facebook.com/v20.0`;
+
 // Instagram
 export const INSTAGRAM_API_URL = `https://graph.instagram.com/v20.0`;
 export const INSTAGRAM_IMAGE_FORMATS = ["jpeg", "jpg"];
