@@ -6,10 +6,16 @@ import { TIME_PAST_THRESHOLD, TIME_FUTURE_THRESHOLD } from "./constants";
 import { initFirebase } from "./storages/firebase";
 import { uploadPost } from "./upload-post";
 import { watchStart } from "./watch-folder";
-import { Config, EnvVars, PromptsResponse } from "./types";
+import { Config, EnvVars, Platform, PostType } from "./types";
 import fs from "node:fs";
 import prompts from "prompts";
-import { questions } from "./create-schedule";
+import {
+  bodyTextQuestionFn,
+  dateQuestion,
+  filesQuestionFn,
+  platformsQuestion,
+  postTypeQuestion,
+} from "./create-schedule";
 import { formatPostFolderName } from "./utils";
 import { processFolder } from "./process-folder";
 
@@ -18,27 +24,40 @@ const { red, yellow } = kleur;
 export function initCreateCommand(program: Command, watchDir: string) {
   program.command("create").action(async () => {
     try {
-      const response = await prompts(questions, {
+      const promptOptions = {
         onCancel: () => {
           throw new Error(red("✖") + " cancelled");
         },
-      });
+      };
 
-      const { postType, platforms, imagePath, videoPath, bodyText, postDate } =
-        response as PromptsResponse;
-
-      // need at least 1 platform. prompts doesn't have a way to validate multiselect.
-      if (platforms.length === 0) {
-        console.error(`Need at least 1 platform. Try again.`);
-        process.exit(1);
-      }
-      // text post needs body text
-      if (postType === "text" && bodyText.trim().length === 0) {
-        console.error(`Text post needs bodyText. Try again.`);
-        process.exit(1);
+      let platforms: Platform[] = [];
+      // make sure at least 1 platform selected
+      while (platforms.length === 0) {
+        const platformsAnswer = await prompts(platformsQuestion, promptOptions);
+        platforms = platformsAnswer.platforms;
       }
 
+      const postTypeAnswer = await prompts(postTypeQuestion, promptOptions);
+      const postType: PostType = postTypeAnswer.postType;
+
+      // text post needs text body
+      const bodyTextAnswer = await prompts(
+        bodyTextQuestionFn(platforms, postType),
+        promptOptions,
+      );
+      const bodyText = bodyTextAnswer.bodyText;
+
+      // TODO: use while loop to get multiple file paths
+      // (first, need to update posting logic to each platform)
+      const filesAnswer = await prompts(
+        filesQuestionFn(platforms, postType),
+        promptOptions,
+      );
+      const { imagePath, videoPath } = filesAnswer;
       const filePath = imagePath || videoPath;
+
+      const dateAnswer = await prompts(dateQuestion, promptOptions);
+      const { postDate } = dateAnswer;
 
       // Create a folder inside watchDir with datetime string
       const folderName = formatPostFolderName(postDate.toISOString());

@@ -31,12 +31,3 @@ export type PostSettings = {
   /** File name of image or video */
   filename: string;
 };
-
-export type PromptsResponse = {
-  postType: PostType;
-  platforms: Platform[];
-  imagePath?: string;
-  videoPath?: string;
-  bodyText: string;
-  postDate: Date;
-};
