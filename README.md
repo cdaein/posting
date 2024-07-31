@@ -9,6 +9,7 @@ Schedule social media posting with simple local folder structure.
 1. Clone this repo. `git clone https://github.com/cdaein/posting.git`
 1. Go into the repo directory: `cd posting`
 1. Install dependencies. `npm i`
+1. Build the program. `npm run build`
 1. Install as global command (dont forget the `.`): `npm i -g .`
 1. Copy `.env.example` to `.env` and fill with your own details.
 1. Copy `user.config.json.example` to `user.config.json` and fill with your own details. Most of all, set `watchDir` where you will store scheduled posts.
