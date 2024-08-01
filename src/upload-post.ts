@@ -7,7 +7,7 @@ import { uploadInstagram } from "./platforms/instagram";
 import { uploadMastodon } from "./platforms/mastodon";
 import { uploadThreads } from "./platforms/threads";
 import { uploadTwitter } from "./platforms/twitter";
-import { Config, PostSettings } from "./types";
+import { Config, EnvVars, PostSettings } from "./types";
 
 const { bold } = kleur;
 
@@ -16,6 +16,7 @@ const { bold } = kleur;
  * @returns `true` if uploaded
  */
 export async function uploadPost(
+  envVars: EnvVars,
   postFolderPath: string,
   userConfig: Config,
   storage: FirebaseStorage,
@@ -85,7 +86,12 @@ export async function uploadPost(
         console.log(status);
       } else if (platform === "twitter") {
         console.log(`Uploading to Twitter..`);
-        const status = await uploadTwitter(postFolderPath, settings, dev);
+        const status = await uploadTwitter(
+          envVars,
+          postFolderPath,
+          settings,
+          dev,
+        );
         console.log(status);
       }
     }

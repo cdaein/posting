@@ -155,6 +155,8 @@ export function initWatchCommand(
 ) {
   program
     .command("watch")
+    // TODO: pass to uploadPost
+    .option("--debug", "Debug log")
     .option("--dev", "Dev mode. No post is uploaded.")
     .action(async (opts) => {
       console.log(`Watching ${yellow(watchDir)}`);
@@ -168,13 +170,22 @@ export function initWatchCommand(
         // queue (in case of many posts around the same time)
         const queue = async.queue((folderPath: string, cb) => {
           console.log(`Added to queue ${yellow(folderPath)}`);
-          uploadPost(folderPath, userConfig, storage, firebaseUid, opts.dev)
+          uploadPost(
+            envVars,
+            folderPath,
+            userConfig,
+            storage,
+            firebaseUid,
+            opts.dev,
+          )
             .then(async () => {
               // move the published folder to _published
               const publishedFolderPath = path.join(watchDir, "_published");
               if (!fs.existsSync(publishedFolderPath)) {
                 fs.mkdirSync(publishedFolderPath, { recursive: true });
               }
+              // FIX: folder should move when it fails to prevent from duplicate posting.
+              // be on the safe side.
               try {
                 const newFolderPath = path.join(
                   publishedFolderPath,
@@ -183,13 +194,14 @@ export function initWatchCommand(
                 await fs.promises.rename(folderPath, newFolderPath);
                 console.log(`Folder moved to ${yellow(newFolderPath)}`);
               } catch (e) {
-                throw new Error(`Error moving post folder \n${e}`);
+                console.error(`Error moving post folder \n${e}`);
+                process.exit(1);
               }
               // let async know the current task is completed
               cb();
             })
             .catch((e) => {
-              console.error(`Error processing folder: ${e}`);
+              console.error(`Error processing post folder: \n${e}`);
               cb(e);
             });
         }, 1);

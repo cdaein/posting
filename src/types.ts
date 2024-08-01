@@ -2,6 +2,10 @@ export type EnvVars = {
   firebaseApiKey: string;
   firebaseEmail: string;
   firebasePassword: string;
+  twitterAppKey: string;
+  twitterAppSecret: string;
+  twitterAccessToken: string;
+  twitterAccessSecret: string;
 };
 
 export type Config = {

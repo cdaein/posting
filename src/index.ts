@@ -18,6 +18,10 @@ const envVars: EnvVars = {
   firebaseApiKey: process.env.FIREBASE_API_KEY!,
   firebaseEmail: process.env.FIREBASE_EMAIL!,
   firebasePassword: process.env.FIREBASE_PASSWORD!,
+  twitterAppKey: process.env.TWITTER_API_KEY!,
+  twitterAppSecret: process.env.TWITTER_API_KEY_SECRET!,
+  twitterAccessToken: process.env.TWITTER_ACCESS_TOKEN!,
+  twitterAccessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET!,
 };
 
 // load user config
