@@ -206,7 +206,7 @@ export function initWatchCommand(
             });
         }, 1);
         queue.drain(() => {
-          console.log("Scheduled posts have been processed.");
+          // console.log("Scheduled posts have been processed.");
         });
 
         // Three ways of monitoring posts

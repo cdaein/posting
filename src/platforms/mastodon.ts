@@ -47,6 +47,7 @@ export async function uploadMastodon(
 
   try {
     // publish
+    console.log(`Publishing on Mastodon..`);
     const status = await masto.v1.statuses.create({
       status: bodyText,
       visibility: "public",
@@ -57,7 +58,7 @@ export async function uploadMastodon(
           }
         : {}),
     });
-
+    console.log(`Published on Mastodon. url: ${status.url}`);
     return { url: status.url };
   } catch (e) {
     throw new Error(`Error publishing to Mastodon \n${e}`);

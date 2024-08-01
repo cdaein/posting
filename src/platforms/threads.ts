@@ -182,8 +182,6 @@ export async function uploadThreads(
         await deleteObject(storageRef);
       }
       console.log("Deleted temporary media file(s) from Firebase Storage");
-      console.log("Published to Threads");
-
       // res.data.id is mediaId
       return res.data;
     })
@@ -191,6 +189,7 @@ export async function uploadThreads(
       console.error(e.response?.data);
       throw new Error(`Error publishing on Threads \n${e}`);
     });
+  console.log(`Published on Threads. id: ${status.id}`);
   return status;
 }
 

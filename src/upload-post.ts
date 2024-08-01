@@ -52,14 +52,16 @@ export async function uploadPost(
     // TODO: check for incorrect postType (ex. set to text, but image file present.)
     // b/c things may have been changed by user since scheduling
 
+    console.log("===============");
     console.log(`Post type: ${postType}`);
     console.log(`Platforms: ${platforms.join(",")}`);
     console.log(`Text: ${bodyText}`);
+    console.log("===============");
 
     for (const platform of platforms) {
       if (platform === "instagram") {
-        console.log("Uploading to Instagram..");
-        const status = await uploadInstagram(
+        console.log(`Uploading to ${bold("Instagram")}..`);
+        await uploadInstagram(
           postFolderPath,
           settings,
           userConfig,
@@ -67,15 +69,13 @@ export async function uploadPost(
           firebaseUid,
           dev,
         );
-        console.log(status);
       } else if (platform === "mastodon") {
-        console.log(`Uploading to Mastodon..`);
-        const status = await uploadMastodon(postFolderPath, settings, dev);
-        console.log(status.url);
+        console.log(`Uploading to ${bold("Mastodon")}..`);
+        await uploadMastodon(postFolderPath, settings, dev);
       } else if (platform === "threads") {
         // TODO: if posting to threads AND instagram, refactor Firebase upload
-        console.log(`Uploading to Threads..`);
-        const status = await uploadThreads(
+        console.log(`Uploading to ${bold("Threads")}..`);
+        await uploadThreads(
           postFolderPath,
           settings,
           userConfig,
@@ -83,16 +83,9 @@ export async function uploadPost(
           firebaseUid,
           dev,
         );
-        console.log(status);
       } else if (platform === "twitter") {
-        console.log(`Uploading to Twitter..`);
-        const status = await uploadTwitter(
-          envVars,
-          postFolderPath,
-          settings,
-          dev,
-        );
-        console.log(status);
+        console.log(`Uploading to ${bold("Twitter")}..`);
+        await uploadTwitter(envVars, postFolderPath, settings, dev);
       }
     }
     return true;
