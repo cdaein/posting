@@ -33,10 +33,10 @@ const envVars: EnvVars = {
   threadsUserId: process.env.THREADS_USER_ID!,
   threadsAccessToken: process.env.THREADS_ACCESS_TOKEN!,
   //
-  twitterAppKey: process.env.TWITTER_API_KEY!,
-  twitterAppSecret: process.env.TWITTER_API_KEY_SECRET!,
-  twitterAccessToken: process.env.TWITTER_ACCESS_TOKEN!,
-  twitterAccessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET!,
+  twitterAppKey: process.env.TWITTER_API_KEY,
+  twitterAppSecret: process.env.TWITTER_API_KEY_SECRET,
+  twitterAccessToken: process.env.TWITTER_ACCESS_TOKEN,
+  twitterAccessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
 };
 
 // load user config

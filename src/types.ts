@@ -16,10 +16,10 @@ export type EnvVars = {
   threadsUserId: string;
   threadsAccessToken: string;
   //
-  twitterAppKey: string;
-  twitterAppSecret: string;
-  twitterAccessToken: string;
-  twitterAccessSecret: string;
+  twitterAppKey?: string;
+  twitterAppSecret?: string;
+  twitterAccessToken?: string;
+  twitterAccessSecret?: string;
 };
 
 export type Config = {

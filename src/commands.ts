@@ -24,7 +24,12 @@ import { Config, EnvVars, Platform, PostType } from "./types";
 import { uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
 import { watchStart } from "./watch-folder";
-import { getTwitterStats } from "./platforms/twitter";
+import { getTwitterStats, initTwitterClient } from "./platforms/twitter";
+import {
+  TwitterApi,
+  TwitterApiReadWrite,
+  TwitterApiTokens,
+} from "twitter-api-v2";
 
 const { bold, green, red, yellow } = kleur;
 
@@ -174,17 +179,27 @@ export function initWatchCommand(
     .action(async (opts) => {
       console.log(`Watching ${yellow(watchDir)}`);
 
-      try {
-        await getTwitterStats(envVars);
-      } catch (e) {
-        console.error(`Error getting the latest Twitter stats.`);
+      const twitterClient = initTwitterClient(envVars);
+      // TODO: setInterval this
+      if (twitterClient) {
+        try {
+          await getTwitterStats(twitterClient);
+        } catch (e) {
+          console.error(`Error getting the latest Twitter stats.`);
+        }
       }
 
       try {
         // queue (in case of many posts around the same time)
         const queue = async.queue((folderPath: string, cb) => {
           console.log(`Added to queue ${yellow(folderPath)}`);
-          uploadPost(envVars, folderPath, userConfig, opts.dev)
+          uploadPost(
+            envVars,
+            { twitterClient },
+            folderPath,
+            userConfig,
+            opts.dev,
+          )
             .then(async () => {
               // move the published folder to _published
               const publishedFolderPath = path.join(watchDir, "_published");

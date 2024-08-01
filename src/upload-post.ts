@@ -9,6 +9,7 @@ import { uploadTwitter } from "./platforms/twitter";
 import { Config, EnvVars, PostSettings } from "./types";
 import { initFirebase } from "./storages/firebase";
 import { uploadBluesky } from "./platforms/bluesky";
+import { TwitterApiReadWrite } from "twitter-api-v2";
 
 const { bold } = kleur;
 
@@ -18,6 +19,9 @@ const { bold } = kleur;
  */
 export async function uploadPost(
   envVars: EnvVars,
+  clients: {
+    twitterClient?: TwitterApiReadWrite;
+  },
   postFolderPath: string,
   userConfig: Config,
   dev: boolean,
@@ -103,7 +107,12 @@ export async function uploadPost(
         );
       } else if (platform === "twitter") {
         console.log(`\t${bold("Twitter")}`);
-        await uploadTwitter(envVars, postFolderPath, settings, dev);
+        await uploadTwitter(
+          clients.twitterClient!,
+          postFolderPath,
+          settings,
+          dev,
+        );
       }
     }
     return true;
