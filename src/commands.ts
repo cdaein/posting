@@ -25,11 +25,7 @@ import { uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
 import { watchStart } from "./watch-folder";
 import { getTwitterStats, initTwitterClient } from "./platforms/twitter";
-import {
-  TwitterApi,
-  TwitterApiReadWrite,
-  TwitterApiTokens,
-} from "twitter-api-v2";
+import { initMastodonClient } from "./platforms/mastodon";
 
 const { bold, green, red, yellow } = kleur;
 
@@ -179,6 +175,8 @@ export function initWatchCommand(
     .action(async (opts) => {
       console.log(`Watching ${yellow(watchDir)}`);
 
+      const mastodonClient = initMastodonClient(envVars);
+
       const twitterClient = initTwitterClient(envVars);
       // TODO: setInterval this
       if (twitterClient) {
@@ -195,7 +193,7 @@ export function initWatchCommand(
           console.log(`Added to queue ${yellow(folderPath)}`);
           uploadPost(
             envVars,
-            { twitterClient },
+            { mastodonClient, twitterClient },
             folderPath,
             userConfig,
             opts.dev,

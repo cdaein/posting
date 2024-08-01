@@ -10,8 +10,8 @@ export type EnvVars = {
   instagramUserId: string;
   instagramAccessToken: string;
   //
-  mastodonInstaceUrl: string;
-  mastodonAccessToken: string;
+  mastodonInstaceUrl?: string;
+  mastodonAccessToken?: string;
   //
   threadsUserId: string;
   threadsAccessToken: string;

@@ -1,4 +1,4 @@
-import { createRestAPIClient } from "masto";
+import { createRestAPIClient, mastodon } from "masto";
 import fs from "node:fs";
 import type { EnvVars, PostSettings } from "../types";
 import path from "node:path";
@@ -11,17 +11,22 @@ interface MediaAttachment {
 
 const { bold, green, yellow } = kleur;
 
+export function initMastodonClient(envVars: EnvVars) {
+  if (envVars.mastodonInstaceUrl && envVars.mastodonAccessToken) {
+    return createRestAPIClient({
+      url: envVars.mastodonInstaceUrl,
+      accessToken: envVars.mastodonAccessToken,
+    });
+  }
+  return undefined;
+}
+
 export async function uploadMastodon(
-  envVars: EnvVars,
+  client: mastodon.rest.Client,
   folderPath: string,
   settings: PostSettings,
   dev: boolean,
 ) {
-  const masto = createRestAPIClient({
-    url: envVars.mastodonInstaceUrl,
-    accessToken: envVars.mastodonAccessToken,
-  });
-
   const { postType, bodyText, fileInfos } = settings;
 
   if (dev) {
@@ -38,7 +43,7 @@ export async function uploadMastodon(
       if (postType === "media") {
         const file = fs.readFileSync(path.join(folderPath, filename));
         // upload media file
-        const mediaAttachment = await masto.v2.media.create({
+        const mediaAttachment = await client.v2.media.create({
           file: new Blob([file]),
           description: altText,
         });
@@ -53,7 +58,7 @@ export async function uploadMastodon(
   try {
     // publish
     console.log(`Publishing on ${bold("Mastodon")}..`);
-    const status = await masto.v1.statuses.create({
+    const status = await client.v1.statuses.create({
       status: bodyText,
       visibility: "public",
       // conditionally add mediaIds

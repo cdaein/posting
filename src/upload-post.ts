@@ -1,15 +1,16 @@
-import { FirebaseStorage, getStorage } from "firebase/storage";
+import { FirebaseStorage } from "firebase/storage";
 import kleur from "kleur";
+import { mastodon } from "masto";
 import fs from "node:fs";
 import path from "path";
+import { TwitterApiReadWrite } from "twitter-api-v2";
+import { uploadBluesky } from "./platforms/bluesky";
 import { uploadInstagram } from "./platforms/instagram";
 import { uploadMastodon } from "./platforms/mastodon";
 import { uploadThreads } from "./platforms/threads";
 import { uploadTwitter } from "./platforms/twitter";
-import { Config, EnvVars, PostSettings } from "./types";
 import { initFirebase } from "./storages/firebase";
-import { uploadBluesky } from "./platforms/bluesky";
-import { TwitterApiReadWrite } from "twitter-api-v2";
+import { Config, EnvVars, PostSettings } from "./types";
 
 const { bold } = kleur;
 
@@ -20,6 +21,7 @@ const { bold } = kleur;
 export async function uploadPost(
   envVars: EnvVars,
   clients: {
+    mastodonClient?: mastodon.rest.Client;
     twitterClient?: TwitterApiReadWrite;
   },
   postFolderPath: string,
@@ -91,7 +93,12 @@ export async function uploadPost(
         );
       } else if (platform === "mastodon") {
         console.log(`\t${bold("Mastodon")}`);
-        await uploadMastodon(envVars, postFolderPath, settings, dev);
+        await uploadMastodon(
+          clients.mastodonClient!,
+          postFolderPath,
+          settings,
+          dev,
+        );
       } else if (platform === "threads") {
         console.log(`\t${bold("Threads")}`);
         // TODO: if posting to threads AND instagram, no need to upload same file twice.
