@@ -190,7 +190,8 @@ export function initWatchCommand(
                   path.basename(folderPath),
                 );
                 await fs.promises.rename(folderPath, newFolderPath);
-                console.log(`Folder moved to ${yellow(newFolderPath)}`);
+
+                console.log(`\nFolder moved to ${yellow(newFolderPath)}`);
               } catch (e) {
                 console.error(`Error moving post folder \n${e}`);
                 process.exit(1);

@@ -23,10 +23,6 @@ export async function uploadPost(
   dev: boolean,
 ) {
   try {
-    console.log(
-      `Processing ${bold(path.basename(postFolderPath))} (current time: ${bold(new Date().toLocaleString())})`,
-    );
-
     // check settings.json
     const settingsPath = path.join(postFolderPath, "settings.json");
     if (!fs.existsSync(settingsPath)) {
@@ -52,13 +48,17 @@ export async function uploadPost(
     // b/c things may have been changed by user since scheduling
 
     console.log("===============");
+    console.log(`Processing ${bold(path.basename(postFolderPath))}`);
+    console.log(`Current time: ${bold(new Date().toLocaleString())}`);
     console.log(`Post type: ${postType}`);
     console.log(`Platforms: ${platforms.join(",")}`);
     console.log(`Text: ${bodyText}`);
-    fileInfos.length > 0 &&
-      console.log(
-        `Files: ${fileInfos.map((info) => info.filename).join(", ")}`,
-      );
+    if (fileInfos.length > 0) {
+      console.log(`Files:`);
+      for (const fileInfo of fileInfos) {
+        console.log(`- ${fileInfo.filename}`);
+      }
+    }
     console.log("===============");
 
     // Threads/Instagram requires public URL so set up Firebase here.
@@ -72,8 +72,8 @@ export async function uploadPost(
     }
 
     for (const platform of platforms) {
-      console.log();
       if (platform === "bluesky") {
+        console.log(`\t${bold("Bluesky")}`);
         await uploadBluesky(envVars, postFolderPath, settings, dev);
       } else if (platform === "instagram") {
         await uploadInstagram(
@@ -86,8 +86,10 @@ export async function uploadPost(
           dev,
         );
       } else if (platform === "mastodon") {
+        console.log(`\t${bold("Mastodon")}`);
         await uploadMastodon(envVars, postFolderPath, settings, dev);
       } else if (platform === "threads") {
+        console.log(`\t${bold("Threads")}`);
         // TODO: if posting to threads AND instagram, no need to upload same file twice.
         // refactor necessary. maybe, upload files here, and just pass the URLs.
         await uploadThreads(
@@ -100,6 +102,7 @@ export async function uploadPost(
           dev,
         );
       } else if (platform === "twitter") {
+        console.log(`\t${bold("Twitter")}`);
         await uploadTwitter(envVars, postFolderPath, settings, dev);
       }
     }
