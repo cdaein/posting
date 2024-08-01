@@ -25,7 +25,7 @@ import { uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
 import { watchStart } from "./watch-folder";
 import { getTwitterStats, initTwitterClient } from "./platforms/twitter";
-import { initMastodonClient } from "./platforms/mastodon";
+import { getMastodonStats, initMastodonClient } from "./platforms/mastodon";
 
 const { bold, green, red, yellow } = kleur;
 
@@ -176,12 +176,19 @@ export function initWatchCommand(
       console.log(`Watching ${yellow(watchDir)}`);
 
       const mastodonClient = initMastodonClient(envVars);
-
       const twitterClient = initTwitterClient(envVars);
+
       // TODO: setInterval this
+      if (mastodonClient) {
+        try {
+          // await getMastodonStats(mastodonClient);
+        } catch (e) {
+          console.error(`Error getting Mastodon stats.`);
+        }
+      }
       if (twitterClient) {
         try {
-          await getTwitterStats(twitterClient);
+          // await getTwitterStats(twitterClient);
         } catch (e) {
           console.error(`Error getting the latest Twitter stats.`);
         }
