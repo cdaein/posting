@@ -194,6 +194,7 @@ export function initWatchCommand(
                 console.log(`\nFolder moved to ${yellow(newFolderPath)}`);
               } catch (e) {
                 console.error(`Error moving post folder \n${e}`);
+                // if post folder is not moved, exit to prevent duplicate posting at next scan.
                 process.exit(1);
               }
               // let async know the current task is completed
@@ -214,10 +215,13 @@ export function initWatchCommand(
                 console.error(`Folder moved to ${yellow(newFolderPath)}`);
               } catch (e) {
                 console.error(`Error moving post folder \n${e}`);
+                // if post folder is not moved, exit to prevent duplicate posting at next scan.
+                process.exit(1);
               }
               console.error(`Error processing post folder: \n${e}`);
               cb(e);
-              process.exit(1);
+              // REVIEW: quit after error or not?
+              // process.exit(1);
             });
         }, 1);
         queue.drain(() => {
