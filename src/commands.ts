@@ -69,7 +69,11 @@ export function initCreateCommand(program: Command, watchDir: string) {
       // ask files to attach until answer is empty
       let numAttached = 0;
       let askMoreAttachment = true;
-      while (numAttached < maxAttachments && askMoreAttachment) {
+      while (
+        postType === "media" &&
+        numAttached < maxAttachments &&
+        askMoreAttachment
+      ) {
         const multiFilesAnswer = await prompts(
           multiFilesQuestionFn(
             platforms,
@@ -91,6 +95,7 @@ export function initCreateCommand(program: Command, watchDir: string) {
       const { postDate } = dateAnswer;
 
       // Create a folder inside watchDir with datetime string
+      // FIX: instead of exiting, check this while asking in prompts
       const folderName = formatPostFolderName(postDate.toISOString());
       const folderPath = path.join(watchDir, folderName);
       if (fs.existsSync(folderPath)) {
@@ -103,7 +108,7 @@ export function initCreateCommand(program: Command, watchDir: string) {
       const targetFilePaths: string[] = [];
       for (const filePath of filePaths) {
         let targetFilePath = "";
-        const filePathTrimmed = filePath.trim();
+        const filePathTrimmed = filePath?.trim();
         if (filePathTrimmed) {
           targetFilePath = path.resolve(
             folderPath,
@@ -113,8 +118,8 @@ export function initCreateCommand(program: Command, watchDir: string) {
             `Copying media file from ${yellow(filePathTrimmed)} to ${yellow(targetFilePath)}`,
           );
           fs.copyFileSync(filePathTrimmed, targetFilePath);
+          targetFilePaths.push(targetFilePath);
         }
-        targetFilePaths.push(targetFilePath);
       }
 
       // Create settings.json file in the scheduled post folder
