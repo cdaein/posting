@@ -27,12 +27,14 @@
     "firebase": "^10.12.4",
     "kleur": "^4.1.5",
     "masto": "^6.8.0",
+    "mime-types": "^2.1.35",
     "prompts": "^2.4.2",
     "twitter-api-v2": "^1.17.2"
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
     "@types/figlet": "^1.5.8",
+    "@types/mime-types": "^2.1.4",
     "@types/node": "^22.0.0",
     "@types/prompts": "^2.4.9",
     "tsup": "^8.2.3",
