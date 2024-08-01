@@ -21,24 +21,27 @@ Schedule social media posting with simple local folder structure.
 
 Run `posting create` to create and schedule a new post interactively. The media file paths you specify will be copied to the `watchDir`.
 
-Or, you can manually create a timestamped (ie. `YYYY.MM.DD-HH.mm`) folder with `settings.json` and media files in the `watchDir`.
+Instead of using the CLI command, you can manually create a timestamped (ie. `YYYY.MM.DD-HH.mm`) folder with `settings.json` and media files in the `watchDir`.
+
+If you want to cancel any scheduled post, simply remove the post folder from `watchDir`.
 
 ### `posting watch`
 
-Run `posting watch` to monitor the `watchDir` directory. Posting will publish a scheduled post if the timestamp of a scheduled post is within the publish window (+/- 10 minutes). Published posts are moved to `_published` folder. Keep the program running in the background.
+Run `posting watch` to monitor the `watchDir` directory. Keep the program running in the background. Posting will publish a scheduled post if the timestamp of a scheduled post is within the publish window (+/- 10 minutes). Published posts are moved to `_published` folder. Any failed posts are moved to `_failed` folder.
 
-There are three ways that Posting detects scheduled posts. First, when it starts, it scans the watch directory for any existing scheduled posts. Second, it detects any new posts added while it is running. Third, it will scan the watch directory every 5 minutes to see if any scheduled posts are within the publish time window.
+There are three ways that Posting detects scheduled posts. First, when it starts, it scans the watch directory for any existing scheduled posts. Second, it scans any new posts added while it is running. Third, it will scan the watch directory every 5 minutes to see if any existing scheduled posts are within the publish time window.
 
 ## Supported Platforms
 
 - Mastodon
-  - Getting API Key is as simple as going to your Preferences > Developement. Create a New Application with read/write access. Then, copy the Access Token.
+  - Getting API Key is very easy. Just go to your instance, click Preferences > Developement. Create a New Application with read/write access. Then, copy the Access Token to `.env`.
 - ~~Instagram~~
-  - IG API doesn't work as I expect it to.
+  - IG API doesn't work as I expect it to. It's one of the worst APIs I've ever had to deal with.
 - Threads
-  - Threads API uses `curl` to download media files so Posting uses Firebase Storage to create public URLs. If posting is sucessful, the temporary file is deleted from Firebase. Free tier should be good enough.
+  - Threads API isn't much better. I wish you good luck with dealing with incomplete API doc and generating and replacing Access Tokens.
+  - Threads API uses `curl` to download media files so it requires public URLs (no local uploading) for file attachments. Posting currently relies on Firebase Storage for this, which means you will need Firebase account. If posting is sucessful, the uploaded file is deleted from Firebase. Free tier of Firebase should be good enough in most cases.
 - Twitter
-  - Free Developer account is good enough for posting text and media tweets.
+  - Free Developer account is good enough for posting text and media tweets. Make sure to give read/write access when creating Access Token.
 
 ## Disclaimer
 
