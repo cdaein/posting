@@ -33,6 +33,9 @@ There are three ways that Posting detects scheduled posts. First, when it starts
 
 ## Supported Platforms
 
+- Bluesky
+  - You only need Bluesky username and password in `.env`.
+  - Bluesky only supports image post.
 - Mastodon
   - Getting API Key is very easy. Just go to your instance, click Preferences > Developement. Create a New Application with read/write access. Then, copy the Access Token to `.env`.
 - ~~Instagram~~
