@@ -31,9 +31,10 @@ export type ThreadsPublishData = {
   access_token: string;
 };
 
-const { green, yellow } = kleur;
+const { bold, green, yellow } = kleur;
 
 // TODO: separate Firebase logic out of uploadThreads as I may change provider later?
+// - also to avoid uploading twice for threads AND instagram.
 // - instead, take publicURL as argument that is generated outside the function
 
 /**
@@ -171,7 +172,7 @@ export async function uploadThreads(
   // per IG API: query a container's status once per minute, for no more than 5 minutes.
   await checkContainerStatus(publishData);
 
-  console.log("Publishing on Threads..");
+  console.log(`Publishing on ${bold("Threads")}..`);
   const status = await axios
     .post(`${THREADS_API_URL}/${USER_ID}/threads_publish`, null, {
       params: publishData,
@@ -189,7 +190,7 @@ export async function uploadThreads(
       console.error(e.response?.data);
       throw new Error(`Error publishing on Threads \n${e}`);
     });
-  console.log(`Published on Threads. id: ${status.id}`);
+  console.log(`Published on ${bold("Threads")}. id: ${status.id}`);
   return status;
 }
 

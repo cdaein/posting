@@ -60,8 +60,8 @@ export async function uploadPost(
     console.log("===============");
 
     for (const platform of platforms) {
+      console.log();
       if (platform === "instagram") {
-        console.log(`Uploading to ${bold("Instagram")}..`);
         await uploadInstagram(
           postFolderPath,
           settings,
@@ -71,11 +71,10 @@ export async function uploadPost(
           dev,
         );
       } else if (platform === "mastodon") {
-        console.log(`Uploading to ${bold("Mastodon")}..`);
         await uploadMastodon(postFolderPath, settings, dev);
       } else if (platform === "threads") {
-        // TODO: if posting to threads AND instagram, refactor Firebase upload
-        console.log(`Uploading to ${bold("Threads")}..`);
+        // TODO: if posting to threads AND instagram, no need to upload same file twice.
+        // refactor necessary. maybe, upload files here, and just pass the URLs.
         await uploadThreads(
           postFolderPath,
           settings,
@@ -85,7 +84,6 @@ export async function uploadPost(
           dev,
         );
       } else if (platform === "twitter") {
-        console.log(`Uploading to ${bold("Twitter")}..`);
         await uploadTwitter(envVars, postFolderPath, settings, dev);
       }
     }

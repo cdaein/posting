@@ -7,7 +7,7 @@ import kleur from "kleur";
 // const user = await readOnlyClient.v2.userByUsername("cdaein");
 // console.log(user);
 
-const { green, yellow } = kleur;
+const { bold, green, yellow } = kleur;
 
 export async function uploadTwitter(
   envVars: EnvVars,
@@ -31,9 +31,11 @@ export async function uploadTwitter(
     return "DEV MODE TWITTER";
   }
 
+  console.log(`Publishing on ${bold("Twitter")}..`);
   try {
     if (postType === "text") {
       const status = await client.v2.tweet(bodyText);
+      console.log(`Published on Twitter. id: ${status.data.id}`);
       return status;
     } else {
       const mediaIds: string[] = [];
@@ -45,7 +47,6 @@ export async function uploadTwitter(
         mediaIds.push(mediaId);
         console.log(`File uploaded. id: ${green(mediaId)}`);
       }
-      console.log(`Posting tweet..`);
       const status = await client.v2.tweet(bodyText, {
         media: {
           media_ids: mediaIds as
@@ -55,7 +56,7 @@ export async function uploadTwitter(
             | [string, string, string, string],
         },
       });
-      console.log(`Published on Twitter. id: ${status.data.id}`);
+      console.log(`Published on ${bold("Twitter")}. id: ${status.data.id}`);
       return status.data;
     }
   } catch (e: any) {

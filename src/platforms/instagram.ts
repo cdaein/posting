@@ -36,7 +36,7 @@ type InstagramPublishData = {
   access_token: string;
 };
 
-const { green, yellow } = kleur;
+const { bold, green, yellow } = kleur;
 
 // https://developers.facebook.com/docs/instagram/platform/instagram-api/content-publishing
 export async function uploadInstagram(
@@ -163,7 +163,7 @@ export async function uploadInstagram(
 
   await checkContainerStatus(publishData);
 
-  console.log("Publishing on Instagram..");
+  console.log(`Publishing on ${bold("Instagram")}..`);
   const status = await axios
     .post(`${INSTAGRAM_API_URL}/${USER_ID}/media_publish`, null, {
       // .post(`${FACEBOOK_API_URL}/media_publish`, null, {
@@ -175,7 +175,7 @@ export async function uploadInstagram(
         await deleteObject(storageRef);
       }
       console.log("Deleted media file(s) from Firebase Storage");
-      console.log("Published to Instagram");
+      console.log(`Published on ${bold("Instagram")}`);
       // res.data.id is mediaId
       return res.data;
     })
