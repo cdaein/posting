@@ -24,7 +24,7 @@ import { uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
 import { watchStart } from "./watch-folder";
 
-const { red, yellow } = kleur;
+const { bold, green, red, yellow } = kleur;
 
 export function initCreateCommand(program: Command, watchDir: string) {
   program.command("create").action(async () => {
@@ -139,6 +139,9 @@ export function initCreateCommand(program: Command, watchDir: string) {
       );
 
       console.log(`The post is ready at ${yellow(folderPath)}`);
+      console.log(
+        `It will be published around the scheduled time if ${green("posting watch")} is running.`,
+      );
     } catch (e: unknown) {
       console.log((e as Error).message);
       return;

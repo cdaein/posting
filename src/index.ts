@@ -8,6 +8,7 @@ import { initCreateCommand, initWatchCommand } from "./commands";
 import { defaultConfig } from "./constants";
 import { EnvVars } from "./types";
 import { loadConfig, resolvePath } from "./utils";
+import figlet from "figlet";
 
 // access .env from anywhere (when calling as global command)
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -47,6 +48,15 @@ if (!fs.lstatSync(watchDir).isDirectory()) {
   console.error(`Watch directory is not a directory.`);
   process.exit(1);
 }
+
+console.log(
+  figlet.textSync("posting", {
+    font: "Hollywood",
+    // font: "Slant",
+    whitespaceBreak: true,
+  }),
+);
+console.log();
 
 program.version(version).description(description);
 

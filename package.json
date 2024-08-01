@@ -22,6 +22,7 @@
     "chokidar": "^3.6.0",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
+    "figlet": "^1.7.0",
     "firebase": "^10.12.4",
     "kleur": "^4.1.5",
     "masto": "^6.8.0",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
+    "@types/figlet": "^1.5.8",
     "@types/node": "^22.0.0",
     "@types/prompts": "^2.4.9",
     "tsup": "^8.2.3",
