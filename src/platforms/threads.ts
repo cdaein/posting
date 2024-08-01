@@ -192,7 +192,7 @@ export async function uploadThreads(
       console.error(e.response?.data);
       throw new Error(`Error publishing on Threads \n${e}`);
     });
-  console.log(`Published on ${bold("Threads")}. id: ${status.id}`);
+  console.log(`Published on ${bold("Threads")}. id: ${green(status.id)}`);
   return status;
 }
 

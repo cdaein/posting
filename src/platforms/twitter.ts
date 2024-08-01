@@ -63,7 +63,9 @@ export async function uploadTwitter(
             | [string, string, string, string],
         },
       });
-      console.log(`Published on ${bold("Twitter")}. id: ${status.data.id}`);
+      console.log(
+        `Published on ${bold("Twitter")}. id: ${green(status.data.id)}`,
+      );
       return status.data;
     }
   } catch (e: any) {
