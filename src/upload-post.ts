@@ -11,6 +11,7 @@ import { uploadThreads } from "./platforms/threads";
 import { uploadTwitter } from "./platforms/twitter";
 import { initFirebase } from "./storages/firebase";
 import { Config, EnvVars, PostSettings } from "./types";
+import { BskyAgent } from "@atproto/api";
 
 const { bold } = kleur;
 
@@ -21,6 +22,7 @@ const { bold } = kleur;
 export async function uploadPost(
   envVars: EnvVars,
   clients: {
+    blueskyAgent?: BskyAgent;
     mastodonClient?: mastodon.rest.Client;
     twitterClient?: TwitterApiReadWrite;
   },
@@ -80,7 +82,12 @@ export async function uploadPost(
     for (const platform of platforms) {
       if (platform === "bluesky") {
         console.log(`\t${bold("Bluesky")}`);
-        await uploadBluesky(envVars, postFolderPath, settings, dev);
+        await uploadBluesky(
+          clients.blueskyAgent!,
+          postFolderPath,
+          settings,
+          dev,
+        );
       } else if (platform === "instagram") {
         await uploadInstagram(
           envVars,

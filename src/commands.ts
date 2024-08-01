@@ -12,6 +12,9 @@ import {
   TIME_PAST_THRESHOLD,
   TWITTER_MAX_ATTACHMENTS,
 } from "./constants";
+import { getBlueskyStats, initBlueskyAgent } from "./platforms/bluesky";
+import { getMastodonStats, initMastodonClient } from "./platforms/mastodon";
+import { getTwitterStats, initTwitterClient } from "./platforms/twitter";
 import { processFolder } from "./process-folder";
 import {
   bodyTextQuestionFn,
@@ -24,8 +27,6 @@ import { Config, EnvVars, Platform, PostType } from "./types";
 import { uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
 import { watchStart } from "./watch-folder";
-import { getTwitterStats, initTwitterClient } from "./platforms/twitter";
-import { getMastodonStats, initMastodonClient } from "./platforms/mastodon";
 
 const { bold, green, red, yellow } = kleur;
 
@@ -175,10 +176,19 @@ export function initWatchCommand(
     .action(async (opts) => {
       console.log(`Watching ${yellow(watchDir)}`);
 
+      const blueskyAgent = await initBlueskyAgent(envVars);
       const mastodonClient = initMastodonClient(envVars);
       const twitterClient = initTwitterClient(envVars);
 
       // TODO: setInterval this
+      if (blueskyAgent) {
+        try {
+          await getBlueskyStats(blueskyAgent, userConfig);
+        } catch (e) {
+          console.error(e);
+          console.error(`Error getting Bluesky stats.`);
+        }
+      }
       if (mastodonClient) {
         try {
           // await getMastodonStats(mastodonClient);
@@ -200,7 +210,7 @@ export function initWatchCommand(
           console.log(`Added to queue ${yellow(folderPath)}`);
           uploadPost(
             envVars,
-            { mastodonClient, twitterClient },
+            { blueskyAgent, mastodonClient, twitterClient },
             folderPath,
             userConfig,
             opts.dev,

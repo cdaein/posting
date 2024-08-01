@@ -17,7 +17,7 @@ dotenv.config({ path: path.join(projectDir, ".env") });
 
 const envVars: EnvVars = {
   //
-  blueskyUsername: process.env.BLUESKY_USERNAME!,
+  blueskyEmail: process.env.BLUESKY_EMAIL!,
   blueskyPassword: process.env.BLUESKY_PASSWORD!,
   //
   firebaseApiKey: process.env.FIREBASE_API_KEY!,

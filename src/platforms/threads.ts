@@ -253,6 +253,14 @@ async function createMediaContainer(
     });
 }
 
+// https://developers.facebook.com/docs/threads/insights
+export async function getThreadsStats() {
+  // nothing prints..
+  // curl -s -X GET "https://graph.threads.net/v1.0/[MEDIA-ID]/insights" \
+  // -F "metric=likes,replies" \
+  // -F "access_token=[ACCESS_TOKEN]"
+}
+
 // Refresh access token before expiration
 // WARN: BELOW NOT TESTED YET!!!
 

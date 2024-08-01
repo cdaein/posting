@@ -6,6 +6,9 @@
       "storageBucket": "",
     }
   },
+  "bluesky": {
+    "handle": "your-handle.bsky.social"
+  },
   "mastodon": {},
   "threads": {
     "keyRefreshIntervalDay": 15,

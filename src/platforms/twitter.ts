@@ -107,6 +107,12 @@ export async function uploadTwitter(
   }
 }
 
+/**
+ * Get my latest tweet stat using `v2/me` endpoint.
+ * Check the [rate limit](https://developer.x.com/en/docs/twitter-api/rate-limits#v2-limits-free)
+ * 25 req per 24 hours
+ * @param client -
+ */
 export async function getTwitterStats(client: TwitterApiReadWrite) {
   // simple user query (this works; good for testing auth)
   // const user = await client.currentUserV2();

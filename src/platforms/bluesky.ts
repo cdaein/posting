@@ -1,9 +1,9 @@
-import { BlobRef, BskyAgent, PostRecord, RichText } from "@atproto/api";
-import { EnvVars, PostSettings } from "../types";
+import { BlobRef, BskyAgent, RichText } from "@atproto/api";
 import kleur from "kleur";
+import mime from "mime-types";
 import fs from "node:fs";
 import path from "node:path";
-import mime from "mime-types";
+import { Config, EnvVars, PostSettings } from "../types";
 
 type ImageRecord = {
   alt: string;
@@ -16,25 +16,32 @@ type ImageRecord = {
 
 const { bold, green, yellow } = kleur;
 
+export async function initBlueskyAgent(envVars: EnvVars) {
+  if (envVars.blueskyEmail && envVars.blueskyPassword) {
+    const agent = new BskyAgent({
+      service: "https://bsky.social",
+    });
+
+    try {
+      await agent.login({
+        identifier: envVars.blueskyEmail,
+        password: envVars.blueskyPassword,
+      });
+
+      return agent;
+    } catch (e) {
+      throw new Error(`Bluesky log in failed`);
+    }
+  }
+  return undefined;
+}
+
 export async function uploadBluesky(
-  envVars: EnvVars,
+  agent: BskyAgent,
   folderPath: string,
   settings: PostSettings,
   dev: boolean,
 ) {
-  const agent = new BskyAgent({
-    service: "https://bsky.social",
-  });
-
-  try {
-    await agent.login({
-      identifier: envVars.blueskyUsername,
-      password: envVars.blueskyPassword,
-    });
-  } catch (e) {
-    throw new Error(`Bluesky log in failed`);
-  }
-
   const { postType, bodyText, fileInfos } = settings;
 
   if (dev) {
@@ -92,17 +99,43 @@ export async function uploadBluesky(
   }
 }
 
-function convertDataURIToUint8Array(dataURI: string) {
-  // Strip off the data URI scheme and get the base64 string
-  const base64 = dataURI.split(",")[1];
-  // Decode the base64 string
-  // const binaryString = Buffer.from(base64, "base64").toString("binary");
-  const binaryString = atob(base64);
+export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
+  if (userConfig.bluesky?.handle) {
+    const authorFeed = await agent.getAuthorFeed({
+      actor: userConfig.bluesky.handle,
+      limit: 1,
+    });
+    const { uri } = authorFeed.data.feed[0].post;
+    const res = await agent.getPostThread({ uri });
+    const { post } = res.data.thread;
+    // REVIEW: get the proper type
+    // @ts-ignore
+    const { likeCount, replyCount, repostCount } = post;
+    // @ts-ignore
+    const text = post.record.text as string;
 
-  // Convert the binary string to a Uint8Array
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+    const likes = `Likes: ${green(likeCount)}`;
+    const reposts = `Reblogs: ${green(repostCount)}`;
+    const replies = `Replies: ${green(replyCount)}`;
+
+    console.log();
+    console.log(`Latest Bluesky post (${green(uri)}) stats`);
+    console.log(`Text: ${text}`);
+    console.log(likes, reposts, replies);
   }
-  return bytes;
 }
+
+// function convertDataURIToUint8Array(dataURI: string) {
+//   // Strip off the data URI scheme and get the base64 string
+//   const base64 = dataURI.split(",")[1];
+//   // Decode the base64 string
+//   // const binaryString = Buffer.from(base64, "base64").toString("binary");
+//   const binaryString = atob(base64);
+//
+//   // Convert the binary string to a Uint8Array
+//   const bytes = new Uint8Array(binaryString.length);
+//   for (let i = 0; i < binaryString.length; i++) {
+//     bytes[i] = binaryString.charCodeAt(i);
+//   }
+//   return bytes;
+// }

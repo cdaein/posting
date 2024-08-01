@@ -1,7 +1,7 @@
 export type EnvVars = {
   //
-  blueskyUsername: string;
-  blueskyPassword: string;
+  blueskyEmail?: string;
+  blueskyPassword?: string;
   //
   firebaseApiKey: string;
   firebaseEmail: string;
@@ -33,6 +33,9 @@ export type Config = {
   };
   ngrok: {
     port: number;
+  };
+  bluesky?: {
+    handle: string;
   };
 };
 
