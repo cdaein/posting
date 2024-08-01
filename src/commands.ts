@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "path";
 import prompts from "prompts";
 import {
+  BLUESKY_MAX_ATTACHMENTS,
   MASTODON_MAX_ATTACHMENTS,
   THREADS_MAX_ATTACHMENTS,
   TIME_FUTURE_THRESHOLD,
@@ -59,10 +60,11 @@ export function initCreateCommand(program: Command, watchDir: string) {
       // minimum of all platforms max attachments
       const maxAttachments = Math.min(
         ...platforms.map((platform) => {
-          if (platform === "mastodon") return MASTODON_MAX_ATTACHMENTS;
+          if (platform === "bluesky") return BLUESKY_MAX_ATTACHMENTS;
+          else if (platform === "mastodon") return MASTODON_MAX_ATTACHMENTS;
           else if (platform === "threads") return THREADS_MAX_ATTACHMENTS;
           else if (platform === "twitter") return TWITTER_MAX_ATTACHMENTS;
-          return 1;
+          return -1;
         }),
       );
       // ask files to attach until answer is empty

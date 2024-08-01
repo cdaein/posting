@@ -2,6 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { Choice, PromptObject } from "prompts";
 import {
+  BLUESKY_IMAGE_FORMATS,
+  BLUESKY_MAX_CHARS,
+  BLUESKY_VIDEO_FORMATS,
   defaultConfig,
   MASTODON_IMAGE_FORMATS,
   MASTODON_MAX_CHARS,
@@ -20,6 +23,7 @@ import { loadConfig } from "./utils";
 const userConfig = await loadConfig(defaultConfig, "../user.config.json");
 
 const platforms: Choice[] = [
+  { title: "bluesky", value: "bluesky" },
   // { title: "instagram", value: "instagram", disabled: true },
   { title: "mastodon", value: "mastodon" },
   { title: "threads", value: "threads" },
@@ -72,14 +76,16 @@ export const bodyTextQuestionFn = (
       }
       const maxChars = Math.min(
         ...platforms.map((platform) => {
-          if (platform === "mastodon") {
+          if (platform === "bluesky") {
+            return BLUESKY_MAX_CHARS;
+          } else if (platform === "mastodon") {
             return MASTODON_MAX_CHARS;
           } else if (platform === "threads") {
             return THREADS_MAX_CHARS;
           } else if (platform === "twitter") {
             return TWITTER_MAX_CHARS;
           }
-          return 0;
+          return -1;
         }),
       );
 
@@ -130,7 +136,9 @@ export const multiFilesQuestionFn = (
 
       const commonImageFormats = getCommonFormats(
         ...platforms.map((platform) => {
-          if (platform === "mastodon") {
+          if (platform === "bluesky") {
+            return BLUESKY_IMAGE_FORMATS;
+          } else if (platform === "mastodon") {
             return MASTODON_IMAGE_FORMATS;
           } else if (platform === "threads") {
             return THREADS_IMAGE_FORMATS;
@@ -143,7 +151,9 @@ export const multiFilesQuestionFn = (
 
       const commonVideoFormats = getCommonFormats(
         ...platforms.map((platform) => {
-          if (platform === "mastodon") {
+          if (platform === "bluesky") {
+            return BLUESKY_VIDEO_FORMATS;
+          } else if (platform === "mastodon") {
             return MASTODON_VIDEO_FORMATS;
           } else if (platform === "threads") {
             return THREADS_VIDEO_FORMATS;

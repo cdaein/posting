@@ -18,6 +18,10 @@ export const TIME_PAST_THRESHOLD = -10;
 export const TIME_FUTURE_THRESHOLD = 10;
 
 // Bluesky
+export const BLUESKY_MAX_CHARS = 300;
+export const BLUESKY_IMAGE_FORMATS = ["jpeg", "jpg", "png", "webp", "gif"];
+export const BLUESKY_VIDEO_FORMATS = [];
+export const BLUESKY_MAX_ATTACHMENTS = 4;
 
 // Mastodon
 export const MASTODON_MAX_CHARS = 500;

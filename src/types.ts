@@ -1,4 +1,8 @@
 export type EnvVars = {
+  //
+  blueskyUsername: string;
+  blueskyPassword: string;
+  //
   firebaseApiKey: string;
   firebaseEmail: string;
   firebasePassword: string;
@@ -23,7 +27,6 @@ export type Config = {
   /** interval in minutes */
   processInterval: number;
   firebase: {
-    /** Firebase options to initialize app. */
     options: {
       storageBucket: string;
     };
@@ -33,16 +36,20 @@ export type Config = {
   };
 };
 
-export type Platform = "instagram" | "mastodon" | "threads" | "twitter";
+export type Platform =
+  | "bluesky"
+  | "instagram"
+  | "mastodon"
+  | "threads"
+  | "twitter";
 
 export type PostType = "text" | "media";
 
-/** User-generated post settings. Normally, it comes from `social create` command. */
+/** User-generated post settings. Normally, it comes from `posting create` command. */
 export type PostSettings = {
   postType: PostType;
   platforms: Platform[];
   bodyText: string;
   /** File names of image or video */
   filenames: string[];
-  // filename: string;
 };

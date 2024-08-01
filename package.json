@@ -17,6 +17,7 @@
   "author": "Daeinc",
   "description": "Schedule social media posting with simple folder structure",
   "dependencies": {
+    "@atproto/api": "^0.12.27",
     "async": "^3.2.5",
     "axios": "^1.7.2",
     "chokidar": "^3.6.0",

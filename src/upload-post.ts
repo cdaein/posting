@@ -8,6 +8,7 @@ import { uploadThreads } from "./platforms/threads";
 import { uploadTwitter } from "./platforms/twitter";
 import { Config, EnvVars, PostSettings } from "./types";
 import { initFirebase } from "./storages/firebase";
+import { uploadBluesky } from "./platforms/bluesky";
 
 const { bold } = kleur;
 
@@ -54,7 +55,7 @@ export async function uploadPost(
     console.log(`Post type: ${postType}`);
     console.log(`Platforms: ${platforms.join(",")}`);
     console.log(`Text: ${bodyText}`);
-    console.log(`Files: ${filenames.join(", ")}`);
+    filenames.length > 0 && console.log(`Files: ${filenames.join(", ")}`);
     console.log("===============");
 
     // Threads/Instagram requires public URL so set up Firebase here.
@@ -69,7 +70,9 @@ export async function uploadPost(
 
     for (const platform of platforms) {
       console.log();
-      if (platform === "instagram") {
+      if (platform === "bluesky") {
+        await uploadBluesky(envVars, postFolderPath, settings, dev);
+      } else if (platform === "instagram") {
         await uploadInstagram(
           envVars,
           postFolderPath,
