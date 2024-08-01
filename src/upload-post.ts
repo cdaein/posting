@@ -25,7 +25,7 @@ export async function uploadPost(
 ) {
   try {
     console.log(
-      `Processing ${bold(path.basename(postFolderPath))} (current time: ${new Date().toLocaleString()})`,
+      `Processing ${bold(path.basename(postFolderPath))} (current time: ${bold(new Date().toLocaleString())})`,
     );
 
     // check settings.json
@@ -38,7 +38,7 @@ export async function uploadPost(
     const settings: PostSettings = JSON.parse(
       fs.readFileSync(settingsPath, "utf8"),
     );
-    const { postType, platforms, bodyText } = settings;
+    const { postType, platforms, bodyText, filenames } = settings;
 
     if (!postType) {
       console.error(`Missing postType in ${settingsPath}`);
@@ -56,6 +56,7 @@ export async function uploadPost(
     console.log(`Post type: ${postType}`);
     console.log(`Platforms: ${platforms.join(",")}`);
     console.log(`Text: ${bodyText}`);
+    console.log(`Files: ${filenames.join(", ")}`);
     console.log("===============");
 
     for (const platform of platforms) {
