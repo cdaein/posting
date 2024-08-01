@@ -24,6 +24,7 @@ import { Config, EnvVars, Platform, PostType } from "./types";
 import { uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
 import { watchStart } from "./watch-folder";
+import { getTwitterStats } from "./platforms/twitter";
 
 const { bold, green, red, yellow } = kleur;
 
@@ -172,6 +173,12 @@ export function initWatchCommand(
     .option("--dev", "Dev mode. No post is uploaded.")
     .action(async (opts) => {
       console.log(`Watching ${yellow(watchDir)}`);
+
+      try {
+        await getTwitterStats(envVars);
+      } catch (e) {
+        console.error(`Error getting the latest Twitter stats.`);
+      }
 
       try {
         // queue (in case of many posts around the same time)

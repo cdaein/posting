@@ -3,11 +3,87 @@ import { TwitterApi, TwitterApiTokens } from "twitter-api-v2";
 import { EnvVars, PostSettings } from "../types";
 import kleur from "kleur";
 
-// NOTE: reading doesn't work in free API (only posting works..)
-// const user = await readOnlyClient.v2.userByUsername("cdaein");
-// console.log(user);
+type MostRecentTweetStats = {
+  id: string;
+  text: string;
+  organic_metrics: {
+    impression_count: number;
+    like_count: number;
+    reply_count: number;
+    retweet_count: number;
+    user_profile_clicks: number;
+  };
+  non_public_metrics: {
+    impression_count: number;
+    user_profile_clicks: number;
+    engagements: number;
+  };
+  public_metrics: {
+    bookmark_count: number;
+    impression_count: number;
+    like_count: number;
+    reply_count: number;
+    retweet_count: number;
+    quote_count: number;
+  };
+};
 
 const { bold, green, yellow } = kleur;
+
+export async function getTwitterStats(envVars: EnvVars) {
+  const tokens = {
+    appKey: envVars.twitterAppKey,
+    appSecret: envVars.twitterAppSecret,
+    accessToken: envVars.twitterAccessToken,
+    accessSecret: envVars.twitterAccessSecret,
+  } as unknown as TwitterApiTokens;
+
+  const client = new TwitterApi(tokens).readWrite;
+
+  // simple user query (this works; good for testing auth)
+  // const user = await client.currentUserV2();
+
+  // https://developer.x.com/en/docs/twitter-api/users/lookup/api-reference/get-users-me
+  const user = await client.v2.me({
+    // @ts-ignore
+    expansions: ["most_recent_tweet_id"],
+    "tweet.fields": ["public_metrics", "non_public_metrics", "organic_metrics"],
+    // @ts-ignore
+    "user.fields": ["most_recent_tweet_id", "public_metrics"],
+  });
+  // console.log(user.data.public_metrics);
+
+  const { id, text, organic_metrics, non_public_metrics, public_metrics } = user
+    .includes?.tweets![0] as unknown as MostRecentTweetStats;
+
+  const impressions = `Impressions: ${green(public_metrics.impression_count)}`;
+  const engagements = `Engagements: ${green(non_public_metrics.engagements)}`;
+  const likes = `Likes: ${green(organic_metrics.like_count)}`;
+  const retweets = `Retweets: ${green(organic_metrics.retweet_count)}`;
+  const reply = `Replies: ${green(organic_metrics.reply_count)}`;
+  const quotes = `Quotes: ${green(public_metrics.quote_count)}`;
+  const bookmarks = `Bookmarks: ${green(public_metrics.bookmark_count)}`;
+
+  console.log();
+  console.log(`Latest tweet (${green(id)}) stats`);
+  console.log(`Text: ${text}`);
+  console.log(
+    impressions,
+    engagements,
+    likes,
+    retweets,
+    reply,
+    quotes,
+    bookmarks,
+  );
+
+  // NOTE: reading user/tweet doesn't work in free API (only posting works..)
+  // const user = await readOnlyClient.v2.userByUsername("cdaein");
+  // console.log(user);
+  // const user = await client.v2.user("31077600", {
+  //   "tweet.fields": ["id", "text"],
+  // });
+}
 
 export async function uploadTwitter(
   envVars: EnvVars,
