@@ -2,6 +2,16 @@ export type EnvVars = {
   firebaseApiKey: string;
   firebaseEmail: string;
   firebasePassword: string;
+  //
+  instagramUserId: string;
+  instagramAccessToken: string;
+  //
+  mastodonInstaceUrl: string;
+  mastodonAccessToken: string;
+  //
+  threadsUserId: string;
+  threadsAccessToken: string;
+  //
   twitterAppKey: string;
   twitterAppSecret: string;
   twitterAccessToken: string;

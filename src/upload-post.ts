@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { FirebaseStorage, getStorage } from "firebase/storage";
 import kleur from "kleur";
 import fs from "node:fs";
@@ -59,6 +58,7 @@ export async function uploadPost(
     console.log("===============");
 
     // Threads/Instagram requires public URL so set up Firebase here.
+    // REVIEW: maybe, create public URLs here and pass it to uploadThreads/Instagram
     let storage: FirebaseStorage = getStorage();
     let firebaseUid: string = "";
     if (platforms.includes("threads") || platforms.includes("instagram")) {
@@ -71,6 +71,7 @@ export async function uploadPost(
       console.log();
       if (platform === "instagram") {
         await uploadInstagram(
+          envVars,
           postFolderPath,
           settings,
           userConfig,
@@ -79,11 +80,12 @@ export async function uploadPost(
           dev,
         );
       } else if (platform === "mastodon") {
-        await uploadMastodon(postFolderPath, settings, dev);
+        await uploadMastodon(envVars, postFolderPath, settings, dev);
       } else if (platform === "threads") {
         // TODO: if posting to threads AND instagram, no need to upload same file twice.
         // refactor necessary. maybe, upload files here, and just pass the URLs.
         await uploadThreads(
+          envVars,
           postFolderPath,
           settings,
           userConfig,

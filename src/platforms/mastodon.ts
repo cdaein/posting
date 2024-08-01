@@ -1,8 +1,7 @@
 import { createRestAPIClient } from "masto";
 import fs from "node:fs";
-import type { PostSettings } from "../types";
+import type { EnvVars, PostSettings } from "../types";
 import path from "node:path";
-import "dotenv/config";
 import kleur from "kleur";
 
 // REVIEW: masto doesn't export this type
@@ -13,15 +12,14 @@ interface MediaAttachment {
 const { bold, green, yellow } = kleur;
 
 export async function uploadMastodon(
+  envVars: EnvVars,
   folderPath: string,
   settings: PostSettings,
   dev: boolean,
 ) {
-  // TODO: don't rely on process.env inside function. pass as arguments from main script.
-  // - same with other platform files.
   const masto = createRestAPIClient({
-    url: process.env.MASTODON_INSTANCE_URL!,
-    accessToken: process.env.MASTODON_ACCESS_TOKEN,
+    url: envVars.mastodonInstaceUrl,
+    accessToken: envVars.mastodonAccessToken,
   });
 
   const { postType, bodyText, filenames } = settings;

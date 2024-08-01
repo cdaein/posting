@@ -1,5 +1,4 @@
 import axios from "axios";
-import "dotenv/config";
 import {
   deleteObject,
   FirebaseStorage,
@@ -13,7 +12,7 @@ import {
   INSTAGRAM_VIDEO_FORMATS,
 } from "../constants";
 import { uploadFirebase } from "../storages/firebase";
-import { Config, PostSettings } from "../types";
+import { Config, EnvVars, PostSettings } from "../types";
 
 export type InstagramMediaType = "REELS" | "VIDEO" | "CAROUSEL";
 
@@ -40,6 +39,7 @@ const { bold, green, yellow } = kleur;
 
 // https://developers.facebook.com/docs/instagram/platform/instagram-api/content-publishing
 export async function uploadInstagram(
+  envVars: EnvVars,
   folderPath: string,
   settings: PostSettings,
   userConfig: Config,
@@ -47,8 +47,8 @@ export async function uploadInstagram(
   firebaseUid: string,
   dev: boolean,
 ) {
-  const USER_ID = process.env.INSTAGRAM_USER_ID!;
-  const ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN!;
+  const USER_ID = envVars.instagramUserId;
+  const ACCESS_TOKEN = envVars.instagramAccessToken;
 
   const { postType, bodyText, filenames } = settings;
 

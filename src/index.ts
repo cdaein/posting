@@ -18,6 +18,16 @@ const envVars: EnvVars = {
   firebaseApiKey: process.env.FIREBASE_API_KEY!,
   firebaseEmail: process.env.FIREBASE_EMAIL!,
   firebasePassword: process.env.FIREBASE_PASSWORD!,
+  //
+  instagramUserId: process.env.INSTAGRAM_USER_ID!,
+  instagramAccessToken: process.env.INSTAGRAM_ACCESS_TOKEN!,
+  //
+  mastodonInstaceUrl: process.env.MASTODON_INSTANCE_URL!,
+  mastodonAccessToken: process.env.MASTODON_ACCESS_TOKEN!,
+  //
+  threadsUserId: process.env.THREADS_USER_ID!,
+  threadsAccessToken: process.env.THREADS_ACCESS_TOKEN!,
+  //
   twitterAppKey: process.env.TWITTER_API_KEY!,
   twitterAppSecret: process.env.TWITTER_API_KEY_SECRET!,
   twitterAccessToken: process.env.TWITTER_ACCESS_TOKEN!,

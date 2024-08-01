@@ -1,5 +1,4 @@
 import axios from "axios";
-import "dotenv/config";
 import {
   deleteObject,
   FirebaseStorage,
@@ -8,7 +7,7 @@ import {
 import path from "node:path";
 import { THREADS_API_URL, THREADS_IMAGE_FORMATS } from "../constants";
 import { uploadFirebase } from "../storages/firebase";
-import { Config, PostSettings } from "../types";
+import { Config, EnvVars, PostSettings } from "../types";
 import kleur from "kleur";
 
 export type ThreadsMediaType = "TEXT" | "IMAGE" | "VIDEO" | "CAROUSEL";
@@ -47,6 +46,7 @@ const { bold, green, yellow } = kleur;
  * @returns
  */
 export async function uploadThreads(
+  envVars: EnvVars,
   folderPath: string,
   settings: PostSettings,
   userConfig: Config,
@@ -54,8 +54,8 @@ export async function uploadThreads(
   firebaseUid: string,
   dev: boolean,
 ) {
-  const USER_ID = process.env.THREADS_USER_ID!;
-  const ACCESS_TOKEN = process.env.THREADS_ACCESS_TOKEN!;
+  const USER_ID = envVars.threadsUserId;
+  const ACCESS_TOKEN = envVars.threadsAccessToken;
 
   const { postType, bodyText, filenames } = settings;
 
