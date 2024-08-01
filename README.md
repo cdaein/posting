@@ -32,11 +32,13 @@ There are three ways that Posting detects scheduled posts. First, when it starts
 ## Supported Platforms
 
 - Mastodon
+  - Getting API Key is as simple as going to your Preferences > Developement. Create a New Application with read/write access. Then, copy the Access Token.
 - ~~Instagram~~
   - IG API doesn't work as I expect it to.
 - Threads
   - Threads API uses `curl` to download media files so Posting uses Firebase Storage to create public URLs. If posting is sucessful, the temporary file is deleted from Firebase. Free tier should be good enough.
 - Twitter
+  - Free Developer account is good enough for posting text and media tweets.
 
 ## Disclaimer
 
