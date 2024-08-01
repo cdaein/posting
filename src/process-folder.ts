@@ -1,7 +1,7 @@
 import { QueueObject } from "async";
 import path from "path";
 import { isPostFolder, parsePostFolderName } from "./utils";
-import { isTimeToPublish } from "./watch-folder";
+import { isTimeToPublish } from "./watcher";
 import fs from "node:fs";
 
 /**

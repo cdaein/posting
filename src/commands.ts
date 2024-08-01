@@ -26,7 +26,7 @@ import {
 import { Config, EnvVars, Platform, PostType } from "./types";
 import { uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
-import { watchStart } from "./watch-folder";
+import { watchStart } from "./watcher";
 
 const { bold, green, red, yellow } = kleur;
 
