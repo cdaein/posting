@@ -1,18 +1,19 @@
 import axios from "axios";
-import { Config, PostSettings } from "../types";
-import path from "node:path";
 import "dotenv/config";
 import {
   deleteObject,
   FirebaseStorage,
   StorageReference,
 } from "firebase/storage";
+import kleur from "kleur";
+import path from "node:path";
 import {
   INSTAGRAM_API_URL,
   INSTAGRAM_IMAGE_FORMATS,
   INSTAGRAM_VIDEO_FORMATS,
 } from "../constants";
 import { uploadFirebase } from "../storages/firebase";
+import { Config, PostSettings } from "../types";
 
 export type InstagramMediaType = "REELS" | "VIDEO" | "CAROUSEL";
 
@@ -34,6 +35,8 @@ type InstagramPublishData = {
   creation_id: string;
   access_token: string;
 };
+
+const { green, yellow } = kleur;
 
 // https://developers.facebook.com/docs/instagram/platform/instagram-api/content-publishing
 export async function uploadInstagram(
@@ -74,7 +77,9 @@ export async function uploadInstagram(
     );
     storageRefs.push(storageRef);
     downloadUrls.push(downloadUrl);
+    console.log(`File uploaded ${yellow(filenames[0])}`);
 
+    console.log(`Creating a media container for ${yellow(filenames[0])}`);
     const ext = path.extname(filenames[0]).toLowerCase();
     const mediaContainerID = await createMediaContainer(USER_ID, {
       ...(INSTAGRAM_VIDEO_FORMATS.includes(ext) ? { media_type: "REELS" } : {}),
@@ -89,6 +94,7 @@ export async function uploadInstagram(
       caption: bodyText,
       access_token: ACCESS_TOKEN,
     });
+    console.log(`Media container created. id: ${green(mediaContainerID)}`);
     publishData = {
       creation_id: mediaContainerID,
       access_token: ACCESS_TOKEN,
@@ -97,7 +103,8 @@ export async function uploadInstagram(
     // 2. carousel post
     const mediaContainerIDs: string[] = [];
     console.log("Uploading media files to Firebase Storage..");
-    for (const filename of filenames) {
+    for (let i = 0; i < filenames.length; i++) {
+      const filename = filenames[i];
       // 2.a. upload
       const localFilePath = path.join(folderPath, filename);
       const { storageRef, downloadUrl } = await uploadFirebase(
@@ -107,22 +114,38 @@ export async function uploadInstagram(
       );
       storageRefs.push(storageRef);
       downloadUrls.push(downloadUrl);
+      console.log(`File uploaded ${yellow(filename)}`);
+
       // 2.b. create item container IDs
-      const ext = path.extname(filenames[0]);
+      console.log(`Creating a media container for ${yellow(filename)}`);
+      const ext = path.extname(filenames[0]).toLowerCase();
       const mediaContainerID = await createMediaContainer(USER_ID, {
         is_carousel_item: true,
         ...(INSTAGRAM_VIDEO_FORMATS.includes(ext)
           ? { media_type: "VIDEO" }
           : {}),
+        // image_url: downloadUrls[i],
         ...(INSTAGRAM_IMAGE_FORMATS.includes(ext)
-          ? { image_url: downloadUrls[0] }
-          : { video_url: downloadUrls[0] }),
+          ? { image_url: downloadUrls[i] }
+          : { video_url: downloadUrls[i] }),
         caption: bodyText,
         access_token: ACCESS_TOKEN,
       });
       mediaContainerIDs.push(mediaContainerID);
+      console.log(`Media container created. id: ${green(mediaContainerID)}`);
     }
+
+    for (const containerId of mediaContainerIDs) {
+      await checkContainerStatus({
+        creation_id: containerId,
+        access_token: ACCESS_TOKEN,
+      });
+    }
+
     // 2.c. create carousel media container ID
+    console.log(
+      `Creating a carousel container for ${green(mediaContainerIDs.join(","))}`,
+    );
     const carouselContainerID = await createMediaContainer(USER_ID, {
       media_type: "CAROUSEL",
       children: mediaContainerIDs.join(","),
@@ -133,7 +156,12 @@ export async function uploadInstagram(
       creation_id: carouselContainerID,
       access_token: ACCESS_TOKEN,
     };
+    console.log(
+      `Carousel container created. id: ${green(carouselContainerID)}`,
+    );
   }
+
+  await checkContainerStatus(publishData);
 
   console.log("Publishing on Instagram..");
   const status = await axios
@@ -158,6 +186,46 @@ export async function uploadInstagram(
       }
     });
   return status;
+}
+
+async function checkContainerStatus(
+  publishData: InstagramPublishData,
+  maxRetries = 5,
+  interval = 1000 * 30,
+) {
+  const { creation_id, access_token } = publishData;
+  let retries = 0;
+
+  while (retries < maxRetries) {
+    try {
+      const response = await axios.get(`${INSTAGRAM_API_URL}/${creation_id}`, {
+        params: {
+          fields: "status,error_message",
+          access_token,
+        },
+      });
+
+      const { status, error_message } = response.data;
+      console.log(`Container status: ${status} (try ${retries + 1})`);
+
+      if (status === "FINISHED") {
+        console.log(`${green(creation_id)} is ready to publish.`);
+        return;
+      } else if (status === "ERROR") {
+        console.error(`Media container failed.`);
+        throw new Error(error_message);
+      }
+
+      retries++;
+      if (retries < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, interval));
+      }
+    } catch (e) {
+      throw new Error(`Error checking container status: \n${e}`);
+    }
+  }
+
+  throw new Error(`Max retries reached. Media is not ready to publish.`);
 }
 
 // upload image and get media container ID
