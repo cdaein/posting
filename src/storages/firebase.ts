@@ -52,6 +52,7 @@ export async function uploadFirebase(
   filePath: string,
 ) {
   const fileContent = fs.readFileSync(filePath);
+  // TODO: use timestamped folder for later reference and easy file management
   const storageRef = ref(storage, `user/${uid}/${path.basename(filePath)}`);
   const snapshot = await uploadBytes(storageRef, fileContent);
   const downloadUrl = await getDownloadURL(snapshot.ref);

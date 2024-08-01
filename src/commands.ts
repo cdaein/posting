@@ -184,8 +184,6 @@ export function initWatchCommand(
               if (!fs.existsSync(publishedFolderPath)) {
                 fs.mkdirSync(publishedFolderPath, { recursive: true });
               }
-              // FIX: folder should move when it fails to prevent from duplicate posting.
-              // be on the safe side.
               try {
                 const newFolderPath = path.join(
                   publishedFolderPath,
@@ -200,9 +198,25 @@ export function initWatchCommand(
               // let async know the current task is completed
               cb();
             })
-            .catch((e) => {
+            .catch(async (e) => {
+              // move the failed post folder to _failed
+              const failedFolderPath = path.join(watchDir, "_failed");
+              if (!fs.existsSync(failedFolderPath)) {
+                fs.mkdirSync(failedFolderPath, { recursive: true });
+              }
+              try {
+                const newFolderPath = path.join(
+                  failedFolderPath,
+                  path.basename(folderPath),
+                );
+                await fs.promises.rename(folderPath, newFolderPath);
+                console.error(`Folder moved to ${yellow(newFolderPath)}`);
+              } catch (e) {
+                console.error(`Error moving post folder \n${e}`);
+              }
               console.error(`Error processing post folder: \n${e}`);
               cb(e);
+              process.exit(1);
             });
         }, 1);
         queue.drain(() => {
