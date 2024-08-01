@@ -19,9 +19,9 @@ Schedule social media posting with simple local folder structure.
 
 ### `posting create`
 
-Run `posting create` to create and schedule a new post interactively. The media file path you specify will be copied to the `watchDir`.
+Run `posting create` to create and schedule a new post interactively. The media file paths you specify will be copied to the `watchDir`.
 
-Or, you can manually create a timestamped (ie. `YYYY.MM.DD-HH.mm`) folder with `settings.json` and a media file in the `watchDir`.
+Or, you can manually create a timestamped (ie. `YYYY.MM.DD-HH.mm`) folder with `settings.json` and media files in the `watchDir`.
 
 ### `posting watch`
 
@@ -31,13 +31,11 @@ There are three ways that Posting detects scheduled posts. First, when it starts
 
 ## Supported Platforms
 
-Currently, Posting only supports single image/video posts.
-
 - Mastodon
 - ~~Instagram~~
   - IG API doesn't work as I expect it to.
 - Threads
-  - Threads API uses `curl` to download media files so Posting uses Firebase Storage to create public URLs. Free tier should be good enough.
+  - Threads API uses `curl` to download media files so Posting uses Firebase Storage to create public URLs. If posting is sucessful, the temporary file is deleted from Firebase. Free tier should be good enough.
 - Twitter
 
 ## Disclaimer
