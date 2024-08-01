@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { FirebaseStorage } from "firebase/storage";
+import { FirebaseStorage, getStorage } from "firebase/storage";
 import kleur from "kleur";
 import fs from "node:fs";
 import path from "path";
@@ -8,6 +8,7 @@ import { uploadMastodon } from "./platforms/mastodon";
 import { uploadThreads } from "./platforms/threads";
 import { uploadTwitter } from "./platforms/twitter";
 import { Config, EnvVars, PostSettings } from "./types";
+import { initFirebase } from "./storages/firebase";
 
 const { bold } = kleur;
 
@@ -19,8 +20,6 @@ export async function uploadPost(
   envVars: EnvVars,
   postFolderPath: string,
   userConfig: Config,
-  storage: FirebaseStorage,
-  firebaseUid: string,
   dev: boolean,
 ) {
   try {
@@ -58,6 +57,15 @@ export async function uploadPost(
     console.log(`Text: ${bodyText}`);
     console.log(`Files: ${filenames.join(", ")}`);
     console.log("===============");
+
+    // Threads/Instagram requires public URL so set up Firebase here.
+    let storage: FirebaseStorage = getStorage();
+    let firebaseUid: string = "";
+    if (platforms.includes("threads") || platforms.includes("instagram")) {
+      const fb = await initFirebase(envVars, userConfig);
+      storage = fb.storage;
+      firebaseUid = fb.firebaseUid;
+    }
 
     for (const platform of platforms) {
       console.log();

@@ -19,7 +19,6 @@ import {
   platformsQuestion,
   postTypeQuestion,
 } from "./questions";
-import { initFirebase } from "./storages/firebase";
 import { Config, EnvVars, Platform, PostType } from "./types";
 import { uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
@@ -162,22 +161,10 @@ export function initWatchCommand(
       console.log(`Watching ${yellow(watchDir)}`);
 
       try {
-        const { storage, firebaseUid } = await initFirebase(
-          envVars,
-          userConfig,
-        );
-
         // queue (in case of many posts around the same time)
         const queue = async.queue((folderPath: string, cb) => {
           console.log(`Added to queue ${yellow(folderPath)}`);
-          uploadPost(
-            envVars,
-            folderPath,
-            userConfig,
-            storage,
-            firebaseUid,
-            opts.dev,
-          )
+          uploadPost(envVars, folderPath, userConfig, opts.dev)
             .then(async () => {
               // move the published folder to _published
               const publishedFolderPath = path.join(watchDir, "_published");
