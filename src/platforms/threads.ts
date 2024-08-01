@@ -92,7 +92,7 @@ export async function uploadThreads(
       downloadUrls.push(downloadUrl);
       console.log(`File uploaded ${yellow(filenames[0])}`);
 
-      console.log(`Creating a media container`);
+      console.log(`Creating a media container for ${yellow(filenames[0])}`);
       const ext = path.extname(filenames[0]);
       const mediaContainerID = await createMediaContainer(USER_ID, {
         media_type: THREADS_IMAGE_FORMATS.includes(ext) ? "IMAGE" : "VIDEO",
@@ -102,7 +102,7 @@ export async function uploadThreads(
         text: bodyText,
         access_token: ACCESS_TOKEN,
       });
-      console.log(`Media container created`);
+      console.log(`Media container created. id: ${green(mediaContainerID)}`);
       publishData = {
         creation_id: mediaContainerID,
         access_token: ACCESS_TOKEN,
@@ -140,13 +140,11 @@ export async function uploadThreads(
         console.log(`Media container created. id: ${green(mediaContainerID)}`);
       }
 
-      const maxRetries = 5;
       for (const containerId of mediaContainerIDs) {
-        await checkContainerStatus(
-          { creation_id: containerId, access_token: ACCESS_TOKEN },
-          maxRetries,
-          1000 * 30,
-        );
+        await checkContainerStatus({
+          creation_id: containerId,
+          access_token: ACCESS_TOKEN,
+        });
       }
 
       // 3.c. create carousel media container ID
@@ -171,8 +169,7 @@ export async function uploadThreads(
 
   // media container may not be immedidiately ready to publish. (ie. big files)
   // per IG API: query a container's status once per minute, for no more than 5 minutes.
-  const maxRetries = 5;
-  await checkContainerStatus(publishData, maxRetries, 1000 * 30);
+  await checkContainerStatus(publishData);
 
   console.log("Publishing on Threads..");
   const status = await axios
@@ -199,7 +196,7 @@ export async function uploadThreads(
 
 async function checkContainerStatus(
   publishData: ThreadsPublishData,
-  maxRetries: number,
+  maxRetries = 5,
   interval = 1000 * 60,
 ) {
   const { creation_id, access_token } = publishData;
