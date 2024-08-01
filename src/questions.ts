@@ -18,16 +18,19 @@ import {
 } from "./constants";
 import { Platform, PostType } from "./types";
 import { loadConfig } from "./utils";
+import kleur from "kleur";
+
+const { yellow } = kleur;
 
 // load config
 const userConfig = await loadConfig(defaultConfig, "../user.config.json");
 
 const platforms: Choice[] = [
-  { title: "bluesky", value: "bluesky" },
-  // { title: "instagram", value: "instagram", disabled: true },
-  { title: "mastodon", value: "mastodon" },
-  { title: "threads", value: "threads" },
-  { title: "twitter", value: "twitter" },
+  { title: "Bluesky", value: "bluesky" },
+  // { title: "Instagram", value: "instagram", disabled: true },
+  { title: "Mastodon", value: "mastodon" },
+  { title: "Threads", value: "threads" },
+  { title: "Twitter", value: "twitter" },
 ];
 
 const postTypes: Choice[] = [
@@ -109,70 +112,79 @@ export const multiFilesQuestionFn = (
   postType: PostType,
   maxAttachments: number,
   numAttached = 0,
-): PromptObject => {
-  return {
-    type: () => (postType === "media" ? "text" : null),
-    name: "mediaPath",
-    message: () => {
-      if (numAttached === 0) {
-        return `Media file path (${maxAttachments - numAttached} remaining)`;
-      } else {
-        // show "leave blank" after first attachment
-        return `Media file path (${maxAttachments - numAttached} remaining). Leave blank to skip.`;
-      }
-    },
-    validate: (value: string) => {
-      const trimmed = value.trim();
+): PromptObject[] => {
+  return [
+    {
+      type: () => (postType === "media" ? "text" : null),
+      name: "mediaPath",
+      message: () => {
+        if (numAttached === 0) {
+          return `Media file path (${maxAttachments - numAttached} remaining)`;
+        } else {
+          // show "leave blank" after first attachment
+          return `Media file path (${maxAttachments - numAttached} remaining). Enter to skip`;
+        }
+      },
+      validate: (value: string) => {
+        const trimmed = value.trim();
 
-      // at least 1 attachment is required
-      if (numAttached === 0 && !fs.existsSync(trimmed)) {
-        return "Please enter a valid file path";
-      }
+        // at least 1 attachment is required
+        if (numAttached === 0 && !fs.existsSync(trimmed)) {
+          return "Please enter a valid file path";
+        }
 
-      // 2nd+ attachment is optional. if blank, move on.
-      if (numAttached >= 1 && trimmed.length === 0) {
+        // 2nd+ attachment is optional. if blank, move on.
+        if (numAttached >= 1 && trimmed.length === 0) {
+          return true;
+        }
+
+        const commonImageFormats = getCommonFormats(
+          ...platforms.map((platform) => {
+            if (platform === "bluesky") {
+              return BLUESKY_IMAGE_FORMATS;
+            } else if (platform === "mastodon") {
+              return MASTODON_IMAGE_FORMATS;
+            } else if (platform === "threads") {
+              return THREADS_IMAGE_FORMATS;
+            } else if (platform === "twitter") {
+              return TWITTER_IMAGE_FORMATS;
+            }
+            return [];
+          }),
+        );
+
+        const commonVideoFormats = getCommonFormats(
+          ...platforms.map((platform) => {
+            if (platform === "bluesky") {
+              return BLUESKY_VIDEO_FORMATS;
+            } else if (platform === "mastodon") {
+              return MASTODON_VIDEO_FORMATS;
+            } else if (platform === "threads") {
+              return THREADS_VIDEO_FORMATS;
+            } else if (platform === "twitter") {
+              return TWITTER_VIDEO_FORMATS;
+            }
+            return [];
+          }),
+        );
+
+        const commonFormats = [...commonImageFormats, ...commonVideoFormats];
+
+        if (!commonFormats.includes(path.extname(trimmed).slice(1))) {
+          return `Please use a common file type for ${platforms.join(", ")}: ${commonFormats.join(", ")}`;
+        }
+
         return true;
-      }
-
-      const commonImageFormats = getCommonFormats(
-        ...platforms.map((platform) => {
-          if (platform === "bluesky") {
-            return BLUESKY_IMAGE_FORMATS;
-          } else if (platform === "mastodon") {
-            return MASTODON_IMAGE_FORMATS;
-          } else if (platform === "threads") {
-            return THREADS_IMAGE_FORMATS;
-          } else if (platform === "twitter") {
-            return TWITTER_IMAGE_FORMATS;
-          }
-          return [];
-        }),
-      );
-
-      const commonVideoFormats = getCommonFormats(
-        ...platforms.map((platform) => {
-          if (platform === "bluesky") {
-            return BLUESKY_VIDEO_FORMATS;
-          } else if (platform === "mastodon") {
-            return MASTODON_VIDEO_FORMATS;
-          } else if (platform === "threads") {
-            return THREADS_VIDEO_FORMATS;
-          } else if (platform === "twitter") {
-            return TWITTER_VIDEO_FORMATS;
-          }
-          return [];
-        }),
-      );
-
-      const commonFormats = [...commonImageFormats, ...commonVideoFormats];
-
-      if (!commonFormats.includes(path.extname(trimmed).slice(1))) {
-        return `Please use a common file type for ${platforms.join(", ")}: ${commonFormats.join(", ")}`;
-      }
-
-      return true;
+      },
     },
-  };
+    {
+      type: (prev) => (prev.trim().length > 0 ? "text" : null),
+      name: "altText",
+      message: (prev) => {
+        return `Add description for ${yellow(path.basename(prev))}`;
+      },
+    },
+  ];
 };
 
 export const dateQuestion: PromptObject = {

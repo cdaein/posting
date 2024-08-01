@@ -45,11 +45,16 @@ export type Platform =
 
 export type PostType = "text" | "media";
 
+export type FileInfo = {
+  filename: string;
+  altText: string;
+};
+
 /** User-generated post settings. Normally, it comes from `posting create` command. */
 export type PostSettings = {
   postType: PostType;
   platforms: Platform[];
   bodyText: string;
-  /** File names of image or video */
-  filenames: string[];
+  /** `{ filename, altText }` */
+  fileInfos: FileInfo[];
 };

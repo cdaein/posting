@@ -22,7 +22,7 @@ export async function uploadMastodon(
     accessToken: envVars.mastodonAccessToken,
   });
 
-  const { postType, bodyText, filenames } = settings;
+  const { postType, bodyText, fileInfos } = settings;
 
   if (dev) {
     return { url: "DEV MODE MASTODON" };
@@ -30,7 +30,9 @@ export async function uploadMastodon(
 
   const mediaAttachments: MediaAttachment[] = [];
 
-  for (const filename of filenames) {
+  // for (const filename of filenames) {
+  for (const fileInfo of fileInfos) {
+    const { filename, altText } = fileInfo;
     console.log(`Uploading ${yellow(filename)}`);
     try {
       if (postType === "media") {
@@ -38,7 +40,7 @@ export async function uploadMastodon(
         // upload media file
         const mediaAttachment = await masto.v2.media.create({
           file: new Blob([file]),
-          // description: "alt text", // TODO: alt text support
+          description: altText,
         });
         mediaAttachments.push(mediaAttachment);
         console.log(`Uploaded the file. id: ${green(mediaAttachment.id)}`);

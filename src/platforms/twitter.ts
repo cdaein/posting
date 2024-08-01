@@ -25,7 +25,7 @@ export async function uploadTwitter(
 
   const client = new TwitterApi(tokens).readWrite;
 
-  const { postType, bodyText, filenames } = settings;
+  const { postType, bodyText, fileInfos } = settings;
 
   if (dev) {
     return "DEV MODE TWITTER";
@@ -39,11 +39,18 @@ export async function uploadTwitter(
       return status;
     } else {
       const mediaIds: string[] = [];
-      for (const filename of filenames) {
+      for (const fileInfo of fileInfos) {
+        const { filename, altText } = fileInfo;
         console.log(`Uploading file ${yellow(filename)}`);
         const mediaId = await client.v1.uploadMedia(
           path.join(folderPath, filename),
         );
+
+        if (altText) {
+          await client.v1.createMediaMetadata(mediaId, {
+            alt_text: { text: altText },
+          });
+        }
         mediaIds.push(mediaId);
         console.log(`File uploaded. id: ${green(mediaId)}`);
       }

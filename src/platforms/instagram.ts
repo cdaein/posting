@@ -50,7 +50,7 @@ export async function uploadInstagram(
   const USER_ID = envVars.instagramUserId;
   const ACCESS_TOKEN = envVars.instagramAccessToken;
 
-  const { postType, bodyText, filenames } = settings;
+  const { postType, bodyText, fileInfos } = settings;
 
   const storageRefs: StorageReference[] = [];
   const downloadUrls: string[] = [];
@@ -66,10 +66,11 @@ export async function uploadInstagram(
 
   let publishData: InstagramPublishData;
 
-  if (filenames.length === 1) {
+  if (fileInfos.length === 1) {
     // 1. single media post
+    const { filename, altText } = fileInfos[0];
     console.log("Uploading media file to Firebase Storage..");
-    const localFilePath = path.join(folderPath, filenames[0]);
+    const localFilePath = path.join(folderPath, filename);
     const { storageRef, downloadUrl } = await uploadFirebase(
       storage,
       firebaseUid,
@@ -77,10 +78,10 @@ export async function uploadInstagram(
     );
     storageRefs.push(storageRef);
     downloadUrls.push(downloadUrl);
-    console.log(`File uploaded ${yellow(filenames[0])}`);
+    console.log(`File uploaded ${yellow(filename)}`);
 
-    console.log(`Creating a media container for ${yellow(filenames[0])}`);
-    const ext = path.extname(filenames[0]).toLowerCase();
+    console.log(`Creating a media container for ${yellow(filename)}`);
+    const ext = path.extname(filename).toLowerCase();
     const mediaContainerID = await createMediaContainer(USER_ID, {
       ...(INSTAGRAM_VIDEO_FORMATS.includes(ext) ? { media_type: "REELS" } : {}),
       // NOTE: IG API doc says, REELS should have video_url, but got an error with missing image_url
@@ -103,8 +104,9 @@ export async function uploadInstagram(
     // 2. carousel post
     const mediaContainerIDs: string[] = [];
     console.log("Uploading media files to Firebase Storage..");
-    for (let i = 0; i < filenames.length; i++) {
-      const filename = filenames[i];
+    // for (let i = 0; i < filenames.length; i++) {
+    for (let i = 0; i < fileInfos.length; i++) {
+      const { filename, altText } = fileInfos[i];
       // 2.a. upload
       const localFilePath = path.join(folderPath, filename);
       const { storageRef, downloadUrl } = await uploadFirebase(
@@ -118,7 +120,7 @@ export async function uploadInstagram(
 
       // 2.b. create item container IDs
       console.log(`Creating a media container for ${yellow(filename)}`);
-      const ext = path.extname(filenames[0]).toLowerCase();
+      const ext = path.extname(filename).toLowerCase();
       const mediaContainerID = await createMediaContainer(USER_ID, {
         is_carousel_item: true,
         ...(INSTAGRAM_VIDEO_FORMATS.includes(ext)

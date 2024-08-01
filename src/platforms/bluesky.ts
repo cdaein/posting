@@ -35,7 +35,7 @@ export async function uploadBluesky(
     throw new Error(`Bluesky log in failed`);
   }
 
-  const { postType, bodyText, filenames } = settings;
+  const { postType, bodyText, fileInfos } = settings;
 
   if (dev) {
     return { url: "DEV MODE BLUESKY" };
@@ -46,7 +46,8 @@ export async function uploadBluesky(
 
   // https://docs.bsky.app/docs/tutorials/creating-a-post#images-embeds
   const images: ImageRecord[] = [];
-  for (const filename of filenames) {
+  for (const fileInfo of fileInfos) {
+    const { filename, altText } = fileInfo;
     const localFilePath = path.join(folderPath, filename);
     const buffer = fs.readFileSync(localFilePath);
     const mimeType = mime.lookup(localFilePath) as string;
@@ -56,7 +57,7 @@ export async function uploadBluesky(
         encoding: mimeType,
       });
       images.push({
-        alt: "alt text",
+        alt: altText,
         image: data.blob,
       });
       console.log(`Uploaded file`);
@@ -70,7 +71,7 @@ export async function uploadBluesky(
     $type: "app.bsky.feed.post",
     text: rt.text,
     facets: rt.facets,
-    ...(filenames.length > 0
+    ...(fileInfos.length > 0
       ? {
           embed: {
             $type: "app.bsky.embed.images",

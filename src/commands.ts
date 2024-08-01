@@ -55,8 +55,8 @@ export function initCreateCommand(program: Command, watchDir: string) {
       );
       const bodyText = bodyTextAnswer.bodyText;
 
-      // ask for multiple file paths
-      const filePaths: string[] = [];
+      // ask for multiple file paths and descriptions (alt text)
+      const fileInfos: { mediaPath: string; altText: string }[] = [];
       // minimum of all platforms max attachments
       const maxAttachments = Math.min(
         ...platforms.map((platform) => {
@@ -87,7 +87,11 @@ export function initCreateCommand(program: Command, watchDir: string) {
         if (multiFilesAnswer.mediaPath?.length === 0) {
           askMoreAttachment = false;
         } else {
-          filePaths.push(multiFilesAnswer.mediaPath);
+          // filePaths.push(multiFilesAnswer.mediaPath);
+          fileInfos.push({
+            mediaPath: multiFilesAnswer.mediaPath,
+            altText: multiFilesAnswer.altText,
+          });
           numAttached++;
         }
       }
@@ -107,7 +111,8 @@ export function initCreateCommand(program: Command, watchDir: string) {
 
       // Copy media files to watchdir
       const targetFilePaths: string[] = [];
-      for (const filePath of filePaths) {
+      for (const fileInfo of fileInfos) {
+        const filePath = fileInfo.mediaPath;
         let targetFilePath = "";
         const filePathTrimmed = filePath?.trim();
         if (filePathTrimmed) {
@@ -124,14 +129,17 @@ export function initCreateCommand(program: Command, watchDir: string) {
       }
 
       // Create settings.json file in the scheduled post folder
-      // TODO: use yaml or toml for user friendliness
-      // REVIEW: any platform-specific settings to add?
       const settings = {
         postType,
         platforms,
         bodyText,
-        // filename: path.basename(targetFilePath),
-        filenames: targetFilePaths.map((filePath) => path.basename(filePath)),
+        // filenames: targetFilePaths.map((filePath) => path.basename(filePath)),
+        fileInfos: fileInfos.map((fileInfo, i) => {
+          return {
+            filename: path.basename(targetFilePaths[i]),
+            altText: fileInfo.altText.trim(),
+          };
+        }),
       };
       const settingsString = JSON.stringify(settings, null, 2);
       fs.writeFileSync(
