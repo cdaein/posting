@@ -59,7 +59,7 @@ export async function uploadPost(
 
     // Threads/Instagram requires public URL so set up Firebase here.
     // REVIEW: maybe, create public URLs here and pass it to uploadThreads/Instagram
-    let storage: FirebaseStorage = getStorage();
+    let storage: FirebaseStorage | undefined;
     let firebaseUid: string = "";
     if (platforms.includes("threads") || platforms.includes("instagram")) {
       const fb = await initFirebase(envVars, userConfig);
@@ -75,7 +75,7 @@ export async function uploadPost(
           postFolderPath,
           settings,
           userConfig,
-          storage,
+          storage!,
           firebaseUid,
           dev,
         );
@@ -89,7 +89,7 @@ export async function uploadPost(
           postFolderPath,
           settings,
           userConfig,
-          storage,
+          storage!,
           firebaseUid,
           dev,
         );
