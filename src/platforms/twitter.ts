@@ -143,8 +143,7 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
     const quotes = `Quotes: ${green(public_metrics.quote_count)}`;
     const bookmarks = `Bookmarks: ${green(public_metrics.bookmark_count)}`;
 
-    console.log();
-    console.log(`Latest tweet (${green(id)}) stats`);
+    console.log(`Latest ${bold("Twitter")} (${green(id)}) stats`);
     console.log(`Text: ${text}`);
     console.log(
       impressions,

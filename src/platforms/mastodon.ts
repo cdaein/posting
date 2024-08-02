@@ -89,8 +89,7 @@ export async function getMastodonStats(client: mastodon.rest.Client) {
     const reblogs = `Reblogs: ${green(reblogsCount)}`;
     const replies = `Replies: ${green(repliesCount)}`;
 
-    console.log();
-    console.log(`Latest Mastodon status (${green(id)}) stats`);
+    console.log(`Latest ${bold("Mastodon")} (${green(id)}) stats`);
     console.log(`Text: ${content}`);
     console.log(faves, reblogs, replies);
   } catch (e) {

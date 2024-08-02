@@ -30,6 +30,15 @@ export type ThreadsPublishData = {
   access_token: string;
 };
 
+export type ThreadsPostInsights = {
+  name: "views" | "likes" | "replies" | "reposts" | "quotes";
+  period: string;
+  values: { value: number }[];
+  title: string;
+  description: string;
+  id: string;
+};
+
 const { bold, green, yellow } = kleur;
 
 // TODO: separate Firebase logic out of uploadThreads as I may change provider later?
@@ -254,11 +263,73 @@ async function createMediaContainer(
 }
 
 // https://developers.facebook.com/docs/threads/insights
-export async function getThreadsStats() {
-  // nothing prints..
-  // curl -s -X GET "https://graph.threads.net/v1.0/[MEDIA-ID]/insights" \
-  // -F "metric=likes,replies" \
-  // -F "access_token=[ACCESS_TOKEN]"
+export async function getThreadsStats(envVars: EnvVars) {
+  // retrieve my user ID
+  // REVIEW: request userId once at start of program
+  const me = await axios
+    .get(`${THREADS_API_URL}/me`, {
+      params: {
+        fileds: "id,username",
+        access_token: envVars.threadsAccessToken,
+      },
+    })
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error(e.response?.data);
+      throw new Error(`Error retrieving my info on Threads \n${e}`);
+    });
+  const { id: userId } = me;
+
+  // retrieve the latest post of a user (limit:1)
+  const userData = await axios
+    .get(`${THREADS_API_URL}/${userId}/threads`, {
+      // .get(`${THREADS_API_URL}/me/threads`, {
+      params: {
+        limit: 1,
+        fields: "id,text,media_url,permalink",
+        access_token: envVars.threadsAccessToken,
+      },
+    })
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error(e.response?.data);
+      throw new Error(`Error retrieving latest post ID on Threads \n${e}`);
+    });
+
+  const posts = userData.data;
+  const { id: mediaId, text, permalink } = posts[0];
+
+  // media insights for latest post
+  const postData: ThreadsPostInsights[] = await axios
+    .get(`${THREADS_API_URL}/${mediaId}/insights`, {
+      params: {
+        metric: "views,likes,replies,reposts,quotes",
+        access_token: envVars.threadsAccessToken,
+      },
+    })
+    .then((res) => res.data.data)
+    .catch((e) => {
+      console.error(e.response?.data);
+      throw new Error(`Error retrieving post data on Threads \n${e}`);
+    });
+
+  const { views, likes, replies, reposts, quotes } = postData.reduce(
+    (acc: Record<string, number>, curr: ThreadsPostInsights) => {
+      acc[curr.name] = curr.values[0].value;
+      return acc;
+    },
+    {},
+  );
+
+  const viewsStr = `Views: ${green(views)}`;
+  const likesStr = `Likes: ${green(likes)}`;
+  const repliesStr = `Replies: ${green(replies)}`;
+  const repostsStr = `Reposts: ${green(reposts)}`;
+  const quotesStr = `Quotes: ${green(quotes)}`;
+
+  console.log(`Latest Threads post (${green(permalink)}) stats`);
+  console.log(`Text: ${text}`);
+  console.log(viewsStr, likesStr, repliesStr, repostsStr, quotesStr);
 }
 
 // Refresh access token before expiration

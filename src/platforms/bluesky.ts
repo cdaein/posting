@@ -119,8 +119,7 @@ export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
       const reposts = `Reblogs: ${green(repostCount)}`;
       const replies = `Replies: ${green(replyCount)}`;
 
-      console.log();
-      console.log(`Latest Bluesky post (${green(uri)}) stats`);
+      console.log(`Latest ${bold("Bluesky")} (${green(uri)}) stats`);
       console.log(`Text: ${text}`);
       console.log(likes, reposts, replies);
     } catch (e) {

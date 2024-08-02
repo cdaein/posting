@@ -46,6 +46,7 @@ If you pass `posting watch --stats` option, it checks stats (like counts, etc.) 
   - IG API doesn't work as I expect it to. It's one of the worst APIs I've ever had to deal with.
 - Threads
   - Threads API isn't much better. I wish you good luck with dealing with incomplete API doc and generating and replacing Access Tokens.
+  - When generating Authourization Code, include in the URL parameters: `scope=threads_basic,threads_content_publish,threads_manage_replies,threads_read_replies,threads_manage_insights`
   - Threads API uses `curl` to download media files so it requires public URLs (no local uploading) for file attachments. Posting currently relies on Firebase Storage for this, which means you will need Firebase account. If posting is sucessful, the uploaded file is deleted from Firebase. Free tier of Firebase should be good enough in most cases.
 - Twitter
   - Free Developer account is good enough for posting text and media tweets. Make sure to give read/write access when creating Access Token.

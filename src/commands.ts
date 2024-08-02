@@ -8,7 +8,7 @@ import prompts from "prompts";
 import { TIME_FUTURE_THRESHOLD, TIME_PAST_THRESHOLD } from "./constants";
 import { getBlueskyStats, initBlueskyAgent } from "./platforms/bluesky";
 import { getMastodonStats, initMastodonClient } from "./platforms/mastodon";
-import { initTwitterClient } from "./platforms/twitter";
+import { getTwitterStats, initTwitterClient } from "./platforms/twitter";
 import { processFolder } from "./process-folder";
 import {
   bodyTextQuestionFn,
@@ -21,6 +21,7 @@ import { Config, EnvVars, Platform, PostType } from "./types";
 import { getMaxAttachments, uploadPost } from "./upload-post";
 import { formatPostFolderName, versionUpPath } from "./utils";
 import { watchStart } from "./watcher";
+import { getThreadsStats } from "./platforms/threads";
 
 const { bold, green, red, yellow } = kleur;
 
@@ -169,15 +170,23 @@ export function initWatchCommand(
       // check stats
       if (opts.stats) {
         console.log(`Will check stats every hour between 6am and midnight.`);
+
         CronJob.from({
           start: true,
           cronTime: userConfig.cronTime,
           onTick: async function () {
-            console.log(`Checking stats..`);
+            console.log(`Checking stats.. (as of ${new Date().toISOString()})`);
 
             if (blueskyAgent) {
               try {
                 await getBlueskyStats(blueskyAgent, userConfig);
+              } catch (e) {
+                console.error(e);
+              }
+            }
+            if (envVars.threadsUserId && envVars.threadsAccessToken) {
+              try {
+                await getThreadsStats(envVars);
               } catch (e) {
                 console.error(e);
               }
@@ -191,7 +200,7 @@ export function initWatchCommand(
             }
             if (twitterClient) {
               try {
-                // await getTwitterStats(twitterClient);
+                await getTwitterStats(twitterClient);
               } catch (e) {
                 console.error(e);
               }
