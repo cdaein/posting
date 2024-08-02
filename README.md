@@ -4,6 +4,8 @@ Schedule social media posting with simple local folder structure.
 
 > Note: This project is in a very early development stage and is primarily intended for my personal use. Use at your own risk. I can't be responsible for any consequences of using the program.
 
+https://github.com/user-attachments/assets/30dd1525-bc9b-446d-bddc-7bbfb361fb5f
+
 ## Set up
 
 1. Clone this repo. `git clone https://github.com/cdaein/posting.git`
