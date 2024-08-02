@@ -47,11 +47,28 @@ export function isPostValid(postFolderPath: string, settings: PostSettings) {
   );
 }
 
-export function readSettings(postFolderPath: string) {
-  const settingsPath = path.join(postFolderPath, "settings.json");
-  if (!fs.existsSync(settingsPath)) {
-    throw new Error(`Not found: settings.json in ${postFolderPath}`);
+async function waitForFile(
+  filePath: string,
+  timeout: number,
+  interval: number,
+) {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < timeout) {
+    if (fs.existsSync(filePath)) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, interval));
   }
+
+  throw new Error(`Timeout: ${filePath} not found after ${timeout}ms`);
+}
+
+export async function readSettings(postFolderPath: string) {
+  const settingsPath = path.join(postFolderPath, "settings.json");
+
+  await waitForFile(settingsPath, 10000, 1000);
+
   // read and parse settings.json
   const settings: PostSettings = JSON.parse(
     fs.readFileSync(settingsPath, "utf8"),
@@ -75,7 +92,7 @@ export async function uploadPost(
   dev: boolean,
 ) {
   try {
-    const settings = readSettings(postFolderPath);
+    const settings = await readSettings(postFolderPath);
 
     if (!isPostValid(postFolderPath, settings)) {
       throw new Error(`Found problem with post folder in ${postFolderPath}`);
