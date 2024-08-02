@@ -183,8 +183,8 @@ export async function uploadThreads(
       // delete files from firebase storage
       for (const storageRef of storageRefs) {
         await deleteObject(storageRef);
+        console.log("Deleted temporary media file from Firebase Storage");
       }
-      console.log("Deleted temporary media file(s) from Firebase Storage");
       // res.data.id is mediaId
       return res.data;
     })
