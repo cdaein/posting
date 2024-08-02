@@ -6,12 +6,20 @@ import fs from "node:fs";
 import path from "path";
 import { TwitterApiReadWrite } from "twitter-api-v2";
 import {
+  BLUESKY_IMAGE_FORMATS,
   BLUESKY_MAX_ATTACHMENTS,
+  BLUESKY_VIDEO_FORMATS,
+  MASTODON_IMAGE_FORMATS,
   MASTODON_MAX_ATTACHMENTS,
+  MASTODON_VIDEO_FORMATS,
   supportedPlatforms,
   supportedPostTypes,
+  THREADS_IMAGE_FORMATS,
   THREADS_MAX_ATTACHMENTS,
+  THREADS_VIDEO_FORMATS,
+  TWITTER_IMAGE_FORMATS,
   TWITTER_MAX_ATTACHMENTS,
+  TWITTER_VIDEO_FORMATS,
 } from "./constants";
 import { uploadBluesky } from "./platforms/bluesky";
 import { uploadInstagram } from "./platforms/instagram";
@@ -24,12 +32,14 @@ import { Config, EnvVars, Platform, PostSettings } from "./types";
 const { bold } = kleur;
 
 export function isPostValid(postFolderPath: string, settings: PostSettings) {
-  // TODO: supported file formats per platform
+  // TODO: max char
+  // TODO: media metadata (dimensions, filesize, etc.)
   return (
     isPlatformsValid(settings) &&
     isPostTypeValid(settings) &&
     isBodyTextValid(settings) &&
-    isFileInfosValid(postFolderPath, settings)
+    isFileInfosValid(postFolderPath, settings) &&
+    isFileFormatsValid(settings)
   );
 }
 
@@ -43,37 +53,6 @@ export function readSettings(postFolderPath: string) {
     fs.readFileSync(settingsPath, "utf8"),
   );
   return settings;
-}
-
-export function isFileInfosValid(
-  postFolderPath: string,
-  settings: PostSettings,
-) {
-  const { platforms, postType, fileInfos } = settings;
-  if (postType === "media") {
-    // fileInfos.length > 0
-    if (!fileInfos || fileInfos.length === 0) {
-      console.error(`fileInfos are required for media post`);
-      return false;
-    }
-    // number of files to upload
-    const numFileInfos = fileInfos.length;
-    const maxAttach = getMaxAttachments(platforms);
-    if (numFileInfos > maxAttach) {
-      console.error(`Exceeded maximum number of attachments ${maxAttach}`);
-    }
-
-    for (const fileInfo of fileInfos) {
-      const { filename } = fileInfo;
-      const filePath = path.join(postFolderPath, filename.trim());
-      if (!fs.existsSync(filePath)) {
-        console.error(`File not found: ${filePath}`);
-        return false;
-      }
-    }
-  }
-
-  return true;
 }
 
 /**
@@ -180,6 +159,95 @@ export async function uploadPost(
   }
 }
 
+export function isFileFormatsValid(settings: PostSettings) {
+  const { platforms, fileInfos } = settings;
+  const commonImageFormats = getCommonImageFormats(platforms);
+  const commonVideoFormats = getCommonVideoFormats(platforms);
+  const commonFormats = [...commonImageFormats, ...commonVideoFormats];
+  for (const fileInfo of fileInfos) {
+    const trimmed = fileInfo.filename;
+    if (!commonFormats.includes(path.extname(trimmed).slice(1))) {
+      console.error(
+        `Please use a common file type for ${platforms.join(", ")}: ${commonFormats.join(", ")}`,
+      );
+      return false;
+    }
+  }
+  return true;
+}
+
+export function getCommonImageFormats(platforms: Platform[]) {
+  return getCommonFormats(
+    ...platforms.map((platform) => {
+      if (platform === "bluesky") {
+        return BLUESKY_IMAGE_FORMATS;
+      } else if (platform === "mastodon") {
+        return MASTODON_IMAGE_FORMATS;
+      } else if (platform === "threads") {
+        return THREADS_IMAGE_FORMATS;
+      } else if (platform === "twitter") {
+        return TWITTER_IMAGE_FORMATS;
+      }
+      return [];
+    }),
+  );
+}
+
+export function getCommonVideoFormats(platforms: Platform[]) {
+  return getCommonFormats(
+    ...platforms.map((platform) => {
+      if (platform === "bluesky") {
+        return BLUESKY_VIDEO_FORMATS;
+      } else if (platform === "mastodon") {
+        return MASTODON_VIDEO_FORMATS;
+      } else if (platform === "threads") {
+        return THREADS_VIDEO_FORMATS;
+      } else if (platform === "twitter") {
+        return TWITTER_VIDEO_FORMATS;
+      }
+      return [];
+    }),
+  );
+}
+
+export const getCommonFormats = (...lists: string[][]) => {
+  if (lists.length === 0) return [];
+  return lists.reduce((commonFormats, list) =>
+    commonFormats.filter((format) => list.includes(format)),
+  );
+};
+
+export function isFileInfosValid(
+  postFolderPath: string,
+  settings: PostSettings,
+) {
+  const { platforms, postType, fileInfos } = settings;
+  if (postType === "media") {
+    // fileInfos.length > 0
+    if (!fileInfos || fileInfos.length === 0) {
+      console.error(`fileInfos are required for media post`);
+      return false;
+    }
+    // number of files to upload
+    const numFileInfos = fileInfos.length;
+    const maxAttach = getMaxAttachments(platforms);
+    if (numFileInfos > maxAttach) {
+      console.error(`Exceeded maximum number of attachments: ${maxAttach}`);
+    }
+
+    for (const fileInfo of fileInfos) {
+      const { filename } = fileInfo;
+      const filePath = path.join(postFolderPath, filename.trim());
+      if (!fs.existsSync(filePath)) {
+        console.error(`File not found: ${filePath}`);
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 // minimum of all platforms max attachments
 export function getMaxAttachments(platforms: Platform[]) {
   return Math.min(
@@ -209,7 +277,7 @@ export function isBodyTextValid(settings: PostSettings) {
 export function isPostTypeValid(settings: PostSettings) {
   const { postType } = settings;
   if (!postType) {
-    console.error(`Missing postType`);
+    console.error(`Please include postType`);
     return false;
   }
   if (!supportedPostTypes.includes(postType)) {
@@ -223,7 +291,7 @@ export function isPlatformsValid(settings: PostSettings) {
   const { platforms } = settings;
   // 1. length > 0
   if (!platforms || platforms.length === 0) {
-    console.error(`Missing platforms`);
+    console.error(`Please include platform(s)`);
     return false;
   }
   // 2. values
