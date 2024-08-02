@@ -1,5 +1,6 @@
 import async from "async";
 import { Command } from "commander";
+import { CronJob } from "cron";
 import kleur from "kleur";
 import fs from "node:fs";
 import path from "path";
@@ -27,7 +28,6 @@ import { Config, EnvVars, Platform, PostType } from "./types";
 import { uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
 import { watchStart } from "./watcher";
-import { CronJob } from "cron";
 
 const { bold, green, red, yellow } = kleur;
 
@@ -181,9 +181,10 @@ export function initWatchCommand(
       const mastodonClient = initMastodonClient(envVars);
       const twitterClient = initTwitterClient(envVars);
 
+      // check stats every hour between 6am-midnight
       CronJob.from({
         start: true,
-        cronTime: "* 0 * * * *",
+        cronTime: userConfig.cronTime,
         onTick: async function () {
           console.log(`Checking stats..`);
 

@@ -26,6 +26,7 @@ export type Config = {
   watchDir: string;
   /** interval in minutes */
   processInterval: number;
+  cronTime: string;
   firebase: {
     options: {
       storageBucket: string;
