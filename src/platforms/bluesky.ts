@@ -64,7 +64,7 @@ export async function uploadBluesky(
         encoding: mimeType,
       });
       images.push({
-        alt: altText,
+        alt: altText || "",
         image: data.blob,
       });
       console.log(`Uploaded file`);

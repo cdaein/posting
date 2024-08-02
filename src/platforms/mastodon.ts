@@ -45,7 +45,7 @@ export async function uploadMastodon(
         // upload media file
         const mediaAttachment = await client.v2.media.create({
           file: new Blob([file]),
-          description: altText,
+          description: altText || "",
         });
         mediaAttachments.push(mediaAttachment);
         console.log(`Uploaded the file. id: ${green(mediaAttachment.id)}`);
