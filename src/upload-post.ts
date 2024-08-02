@@ -32,36 +32,23 @@ import { uploadThreads } from "./platforms/threads";
 import { uploadTwitter } from "./platforms/twitter";
 import { initFirebase } from "./storages/firebase";
 import { Config, EnvVars, Platform, PostSettings } from "./types";
+import { waitForFile } from "./utils";
 
 const { bold } = kleur;
 
-export function isPostValid(postFolderPath: string, settings: PostSettings) {
+export async function isPostValid(
+  postFolderPath: string,
+  settings: PostSettings,
+) {
   // TODO: media metadata (dimensions, filesize, etc.)
   return (
     isPlatformsValid(settings) &&
     isPostTypeValid(settings) &&
     isBodyTextValid(settings) &&
-    isFileInfosValid(postFolderPath, settings) &&
+    (await isFilesValid(postFolderPath, settings)) &&
     isFileFormatsValid(settings) &&
     isCharCountValid(settings)
   );
-}
-
-async function waitForFile(
-  filePath: string,
-  timeout: number,
-  interval: number,
-) {
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < timeout) {
-    if (fs.existsSync(filePath)) {
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, interval));
-  }
-
-  throw new Error(`Timeout: ${filePath} not found after ${timeout}ms`);
 }
 
 export async function readSettings(postFolderPath: string) {
@@ -94,7 +81,7 @@ export async function uploadPost(
   try {
     const settings = await readSettings(postFolderPath);
 
-    if (!isPostValid(postFolderPath, settings)) {
+    if (!(await isPostValid(postFolderPath, settings))) {
       throw new Error(`Found problem with post folder in ${postFolderPath}`);
     }
 
@@ -267,7 +254,7 @@ export const getCommonFormats = (...lists: string[][]) => {
   );
 };
 
-export function isFileInfosValid(
+export async function isFilesValid(
   postFolderPath: string,
   settings: PostSettings,
 ) {
@@ -288,6 +275,10 @@ export function isFileInfosValid(
     for (const fileInfo of fileInfos) {
       const { filename } = fileInfo;
       const filePath = path.join(postFolderPath, filename.trim());
+
+      // it may be still copying so wait and retry
+      await waitForFile(filePath, 10000, 1000);
+
       if (!fs.existsSync(filePath)) {
         console.error(`File not found: ${filePath}`);
         return false;

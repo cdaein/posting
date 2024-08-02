@@ -4,6 +4,23 @@ import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
 
+export async function waitForFile(
+  filePath: string,
+  timeout: number,
+  interval: number,
+) {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < timeout) {
+    if (fs.existsSync(filePath)) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, interval));
+  }
+
+  throw new Error(`Timeout: ${filePath} not found after ${timeout}ms`);
+}
+
 /**
  * Filter only directory & timestamped folder name
  * @param folderPath - full folder path
