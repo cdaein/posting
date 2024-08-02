@@ -64,7 +64,11 @@ export async function readSettings(postFolderPath: string) {
 }
 
 /**
+ * @param envVars -
+ * @param client -
  * @param postFolderPath - Folder where post is in (image, video, settings.json)
+ * @param userConfig -
+ * @param dev - A flag to enable dev mode
  * @returns `true` if uploaded
  */
 export async function uploadPost(

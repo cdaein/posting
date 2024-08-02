@@ -19,7 +19,7 @@ import {
 } from "./questions";
 import { Config, EnvVars, Platform, PostType } from "./types";
 import { getMaxAttachments, uploadPost } from "./upload-post";
-import { formatPostFolderName } from "./utils";
+import { formatPostFolderName, versionUpPath } from "./utils";
 import { watchStart } from "./watcher";
 
 const { bold, green, red, yellow } = kleur;
@@ -105,6 +105,7 @@ export function initCreateCommand(program: Command, watchDir: string) {
           console.log(
             `Copying media file from ${yellow(filePathTrimmed)} to ${yellow(targetFilePath)}`,
           );
+          // TODO: use versionUpPath() to version up same file names (b/c maybe, they are from different original paths)
           fs.copyFileSync(filePathTrimmed, targetFilePath);
           targetFilePaths.push(targetFilePath);
         }
@@ -212,17 +213,17 @@ export function initWatchCommand(
                 fs.mkdirSync(publishedFolderPath, { recursive: true });
               }
               try {
+                const postFoldername = path.basename(folderPath);
                 const newFolderPath = path.join(
                   publishedFolderPath,
-                  path.basename(folderPath),
+                  postFoldername,
                 );
-                // FIX: if there's same folder in _published, it throws
-                // - this is os-level error
-                // - force or version-up
-                // TODO: handle relative path ~ or ./
-                await fs.promises.rename(folderPath, newFolderPath);
-
-                console.log(`\nFolder moved to ${yellow(newFolderPath)}`);
+                // move to _published. if folder already exists, version up
+                const renamedPath = await versionUpPath(
+                  folderPath,
+                  newFolderPath,
+                );
+                console.log(`Folder moved to ${yellow(renamedPath)}`);
               } catch (e) {
                 console.error(`Error moving post folder \n${e}`);
                 // if post folder is not moved, exit to prevent duplicate posting at next scan.
@@ -242,6 +243,7 @@ export function initWatchCommand(
                   failedFolderPath,
                   path.basename(folderPath),
                 );
+                // FIX: use versionUpPath to handle same folder names
                 await fs.promises.rename(folderPath, newFolderPath);
                 console.error(`Folder moved to ${yellow(newFolderPath)}`);
               } catch (e) {
