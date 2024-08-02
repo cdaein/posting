@@ -60,6 +60,7 @@ console.log(
     whitespaceBreak: true,
   }),
 );
+console.log(version);
 console.log();
 
 program.version(version).description(description);
