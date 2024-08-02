@@ -2,23 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { Choice, PromptObject } from "prompts";
 import {
-  BLUESKY_IMAGE_FORMATS,
   BLUESKY_MAX_CHARS,
-  BLUESKY_VIDEO_FORMATS,
   defaultConfig,
-  MASTODON_IMAGE_FORMATS,
   MASTODON_MAX_CHARS,
-  MASTODON_VIDEO_FORMATS,
-  THREADS_IMAGE_FORMATS,
   THREADS_MAX_CHARS,
-  THREADS_VIDEO_FORMATS,
-  TWITTER_IMAGE_FORMATS,
   TWITTER_MAX_CHARS,
-  TWITTER_VIDEO_FORMATS,
 } from "./constants";
 import { Platform, PostType } from "./types";
 import { loadConfig } from "./utils";
 import kleur from "kleur";
+import { getCommonImageFormats, getCommonVideoFormats } from "./upload-post";
 
 const { yellow } = kleur;
 
@@ -50,8 +43,6 @@ export const platformsQuestion: PromptObject = {
 // TODO: mastodon-specific
 //  - message visibility (public, unlisted, follows-only, direct)
 //  - content warning
-// TODO: instagram-specific
-//  -
 // all platforms
 //  - check image/video dimmensions and durations/fps/etc.
 //  - (maybe, ask at the end)
@@ -100,13 +91,6 @@ export const bodyTextQuestionFn = (
   };
 };
 
-const getCommonFormats = (...lists: string[][]) => {
-  if (lists.length === 0) return [];
-  return lists.reduce((commonFormats, list) =>
-    commonFormats.filter((format) => list.includes(format)),
-  );
-};
-
 export const multiFilesQuestionFn = (
   platforms: Platform[],
   postType: PostType,
@@ -139,38 +123,9 @@ export const multiFilesQuestionFn = (
           return true;
         }
 
-        const commonImageFormats = getCommonFormats(
-          ...platforms.map((platform) => {
-            if (platform === "bluesky") {
-              return BLUESKY_IMAGE_FORMATS;
-            } else if (platform === "mastodon") {
-              return MASTODON_IMAGE_FORMATS;
-            } else if (platform === "threads") {
-              return THREADS_IMAGE_FORMATS;
-            } else if (platform === "twitter") {
-              return TWITTER_IMAGE_FORMATS;
-            }
-            return [];
-          }),
-        );
-
-        const commonVideoFormats = getCommonFormats(
-          ...platforms.map((platform) => {
-            if (platform === "bluesky") {
-              return BLUESKY_VIDEO_FORMATS;
-            } else if (platform === "mastodon") {
-              return MASTODON_VIDEO_FORMATS;
-            } else if (platform === "threads") {
-              return THREADS_VIDEO_FORMATS;
-            } else if (platform === "twitter") {
-              return TWITTER_VIDEO_FORMATS;
-            }
-            return [];
-          }),
-        );
-
+        const commonImageFormats = getCommonImageFormats(platforms);
+        const commonVideoFormats = getCommonVideoFormats(platforms);
         const commonFormats = [...commonImageFormats, ...commonVideoFormats];
-
         if (!commonFormats.includes(path.extname(trimmed).slice(1))) {
           return `Please use a common file type for ${platforms.join(", ")}: ${commonFormats.join(", ")}`;
         }
