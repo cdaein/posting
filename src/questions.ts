@@ -88,10 +88,10 @@ export const multiFilesQuestionFn = (
       name: "mediaPath",
       message: () => {
         if (numAttached === 0) {
-          return `Media file path (${maxAttachments - numAttached} remaining)`;
+          return `Media file path (${numAttached + 1}/${maxAttachments})`;
         } else {
           // show "leave blank" after first attachment
-          return `Media file path (${maxAttachments - numAttached} remaining). Enter to skip`;
+          return `Media file path (${numAttached + 1}/${maxAttachments}). Enter to skip`;
         }
       },
       validate: (value: string) => {
