@@ -29,7 +29,7 @@ If you want to cancel any scheduled post, simply remove the post folder from `wa
 
 ### `posting watch`
 
-Run `posting watch` to monitor the `watchDir` directory. Keep the program running in the background. Posting will publish a scheduled post if the timestamp of a scheduled post is within the publish window (+/- 10 minutes). Published posts are moved to `_published` folder. Any failed posts are moved to `_failed` folder.
+Run `posting watch` to monitor the `watchDir` directory. Keep the program running in the background. Posting will publish a scheduled post if the timestamp of a scheduled post is within the publish window (+/- 5 minutes). Published posts are moved to `_published` folder. Any failed posts are moved to `_failed` folder.
 
 There are three ways that Posting detects scheduled posts. First, when it starts, it scans the watch directory for any existing scheduled posts. Second, it scans any new posts added while it is running. Third, it will scan the watch directory every 5 minutes to see if any existing scheduled posts are within the publish time window.
 

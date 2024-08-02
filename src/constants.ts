@@ -24,8 +24,8 @@ export const supportedPlatforms: Platform[] = [
 export const supportedPostTypes: PostType[] = ["text", "media"];
 
 // in minutes
-export const TIME_PAST_THRESHOLD = -10;
-export const TIME_FUTURE_THRESHOLD = 10;
+export const TIME_PAST_THRESHOLD = -5;
+export const TIME_FUTURE_THRESHOLD = 5;
 
 // Bluesky
 export const BLUESKY_MAX_CHARS = 300;
