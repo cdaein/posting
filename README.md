@@ -31,10 +31,12 @@ Run `posting watch` to monitor the `watchDir` directory. Keep the program runnin
 
 There are three ways that Posting detects scheduled posts. First, when it starts, it scans the watch directory for any existing scheduled posts. Second, it scans any new posts added while it is running. Third, it will scan the watch directory every 5 minutes to see if any existing scheduled posts are within the publish time window.
 
+`posting watch` also checks stats for your latest posts on supported platforms. It checks once per hour on 0 minute due to rate limit.
+
 ## Supported Platforms
 
 - Bluesky
-  - You only need Bluesky username and password in `.env`.
+  - You need Bluesky email and password in `.env`. Also, put your handle without `@` symbol in `user.config.json` to check stats.
   - Bluesky only supports image post.
 - Mastodon
   - Getting API Key is very easy. Just go to your instance, click Preferences > Developement. Create a New Application with read/write access. Then, copy the Access Token to `.env`.
