@@ -8,16 +8,16 @@ import prompts from "prompts";
 import { TIME_FUTURE_THRESHOLD, TIME_PAST_THRESHOLD } from "./constants";
 import { getBlueskyStats, initBlueskyAgent } from "./platforms/bluesky";
 import { getMastodonStats, initMastodonClient } from "./platforms/mastodon";
-import { getTwitterStats, initTwitterClient } from "./platforms/twitter";
+import { initTwitterClient } from "./platforms/twitter";
 import { processFolder } from "./process-folder";
 import {
   bodyTextQuestionFn,
-  dateQuestion,
+  dateQuestionFn,
   multiFilesQuestionFn,
   platformsQuestion,
   postTypeQuestion,
 } from "./questions";
-import { Config, EnvVars, Platform, PostSettings, PostType } from "./types";
+import { Config, EnvVars, Platform, PostType } from "./types";
 import { getMaxAttachments, uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
 import { watchStart } from "./watcher";
@@ -75,7 +75,6 @@ export function initCreateCommand(program: Command, watchDir: string) {
         if (multiFilesAnswer.mediaPath?.length === 0) {
           askMoreAttachment = false;
         } else {
-          // filePaths.push(multiFilesAnswer.mediaPath);
           fileInfos.push({
             mediaPath: multiFilesAnswer.mediaPath,
             altText: multiFilesAnswer.altText,
@@ -84,17 +83,12 @@ export function initCreateCommand(program: Command, watchDir: string) {
         }
       }
 
-      const dateAnswer = await prompts(dateQuestion, promptOptions);
+      const dateAnswer = await prompts(dateQuestionFn(watchDir), promptOptions);
       const { postDate } = dateAnswer;
 
       // Create a folder inside watchDir with datetime string
-      // FIX: instead of exiting, check this while asking in prompts
       const folderName = formatPostFolderName(postDate.toISOString());
       const folderPath = path.join(watchDir, folderName);
-      if (fs.existsSync(folderPath)) {
-        console.error(`The folder already exists at ${folderPath}`);
-        process.exit(1);
-      }
       fs.mkdirSync(folderPath, { recursive: true });
 
       // Copy media files to watchdir
@@ -222,6 +216,9 @@ export function initWatchCommand(
                   publishedFolderPath,
                   path.basename(folderPath),
                 );
+                // FIX: if there's same folder in _published, it throws
+                // - this is os-level error
+                // - force or version-up
                 // TODO: handle relative path ~ or ./
                 await fs.promises.rename(folderPath, newFolderPath);
 

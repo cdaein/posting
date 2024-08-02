@@ -1,15 +1,15 @@
+import kleur from "kleur";
 import fs from "node:fs";
 import path from "node:path";
 import { Choice, PromptObject } from "prompts";
 import { defaultConfig } from "./constants";
 import { Platform, PostType } from "./types";
-import { loadConfig } from "./utils";
-import kleur from "kleur";
 import {
   getCommonImageFormats,
   getCommonVideoFormats,
   getMaxChars,
 } from "./upload-post";
+import { formatPostFolderName, loadConfig } from "./utils";
 
 const { yellow } = kleur;
 
@@ -97,6 +97,7 @@ export const multiFilesQuestionFn = (
       validate: (value: string) => {
         const trimmed = value.trim();
         // TODO: handle relative path ~ or ./
+        // - or, at least, validate only path start with "/"
 
         // at least 1 attachment is required
         if (numAttached === 0 && !fs.existsSync(trimmed)) {
@@ -128,16 +129,30 @@ export const multiFilesQuestionFn = (
   ];
 };
 
-export const dateQuestion: PromptObject = {
-  type: "date",
-  name: "postDate",
-  message: "Post time",
-  initial: new Date(
-    new Date().getTime() + userConfig.processInterval * 2 * 60 * 1000,
-  ),
-  mask: "YYYY.MMM.D ddd HH:mm",
-  validate: (date) =>
-    date < Date.now() + userConfig.processInterval * 60 * 1000
-      ? `Must be greater than process interval of ${userConfig.processInterval} minutes`
-      : true,
+export const dateQuestionFn = (watchDir: string): PromptObject => {
+  return {
+    type: "date",
+    name: "postDate",
+    message: "Post time",
+    initial: new Date(
+      new Date().getTime() + userConfig.processInterval * 2 * 60 * 1000,
+    ),
+    mask: "YYYY.MMM.D ddd HH:mm",
+    validate: (value: Date) => {
+      if (
+        value.getTime() <
+        Date.now() + userConfig.processInterval * 60 * 1000
+      ) {
+        return `Must be greater than process interval of ${userConfig.processInterval} minutes`;
+      }
+
+      // REVIEW: check for already existing folder and verion up
+      const folderName = formatPostFolderName(value.toISOString());
+      if (fs.existsSync(path.join(watchDir, folderName))) {
+        return `Pick a different time. Another post is already scheduled.`;
+      }
+
+      return true;
+    },
+  };
 };
