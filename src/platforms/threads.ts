@@ -180,6 +180,7 @@ export async function uploadThreads(
       params: publishData,
     })
     .then(async (res) => {
+      console.log(`Published on ${bold("Threads")}. id: ${green(status.id)}`);
       // delete files from firebase storage
       for (const storageRef of storageRefs) {
         await deleteObject(storageRef);
@@ -192,7 +193,6 @@ export async function uploadThreads(
       console.error(e.response?.data);
       throw new Error(`Error publishing on Threads \n${e}`);
     });
-  console.log(`Published on ${bold("Threads")}. id: ${green(status.id)}`);
   return status;
 }
 
