@@ -11,3 +11,4 @@ todo.md
 .env
 firebase-key.json
 user.config.json
+serviceAccountKey.json
