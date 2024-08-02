@@ -193,21 +193,20 @@ export function initWatchCommand(
               await getBlueskyStats(blueskyAgent, userConfig);
             } catch (e) {
               console.error(e);
-              console.error(`Error getting Bluesky stats.`);
             }
           }
           if (mastodonClient) {
             try {
               await getMastodonStats(mastodonClient);
             } catch (e) {
-              console.error(`Error getting Mastodon stats.`);
+              console.error(e);
             }
           }
           if (twitterClient) {
             try {
               await getTwitterStats(twitterClient);
             } catch (e) {
-              console.error(`Error getting the latest Twitter stats.`);
+              console.error(e);
             }
           }
         },

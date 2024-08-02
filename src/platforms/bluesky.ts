@@ -101,27 +101,31 @@ export async function uploadBluesky(
 
 export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
   if (userConfig.bluesky?.handle) {
-    const authorFeed = await agent.getAuthorFeed({
-      actor: userConfig.bluesky.handle,
-      limit: 1,
-    });
-    const { uri } = authorFeed.data.feed[0].post;
-    const res = await agent.getPostThread({ uri });
-    const { post } = res.data.thread;
-    // REVIEW: get the proper type
-    // @ts-ignore
-    const { likeCount, replyCount, repostCount } = post;
-    // @ts-ignore
-    const text = post.record.text as string;
+    try {
+      const authorFeed = await agent.getAuthorFeed({
+        actor: userConfig.bluesky.handle,
+        limit: 1,
+      });
+      const { uri } = authorFeed.data.feed[0].post;
+      const res = await agent.getPostThread({ uri });
+      const { post } = res.data.thread;
+      // REVIEW: get the proper type
+      // @ts-ignore
+      const { likeCount, replyCount, repostCount } = post;
+      // @ts-ignore
+      const text = post.record.text as string;
 
-    const likes = `Likes: ${green(likeCount)}`;
-    const reposts = `Reblogs: ${green(repostCount)}`;
-    const replies = `Replies: ${green(replyCount)}`;
+      const likes = `Likes: ${green(likeCount)}`;
+      const reposts = `Reblogs: ${green(repostCount)}`;
+      const replies = `Replies: ${green(replyCount)}`;
 
-    console.log();
-    console.log(`Latest Bluesky post (${green(uri)}) stats`);
-    console.log(`Text: ${text}`);
-    console.log(likes, reposts, replies);
+      console.log();
+      console.log(`Latest Bluesky post (${green(uri)}) stats`);
+      console.log(`Text: ${text}`);
+      console.log(likes, reposts, replies);
+    } catch (e) {
+      throw new Error(`Error requesting Bluesky feed/post.`);
+    }
   }
 }
 

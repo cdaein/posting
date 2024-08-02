@@ -76,20 +76,24 @@ export async function uploadMastodon(
 }
 
 export async function getMastodonStats(client: mastodon.rest.Client) {
-  const { id: userId } = await client.v1.accounts.verifyCredentials();
-  const statuses = await client.v1.accounts
-    .$select(userId)
-    .statuses.list({ limit: 1 });
+  try {
+    const { id: userId } = await client.v1.accounts.verifyCredentials();
+    const statuses = await client.v1.accounts
+      .$select(userId)
+      .statuses.list({ limit: 1 });
 
-  const { id, content, favouritesCount, reblogsCount, repliesCount } =
-    statuses[0];
+    const { id, content, favouritesCount, reblogsCount, repliesCount } =
+      statuses[0];
 
-  const faves = `Favorites: ${green(favouritesCount)}`;
-  const reblogs = `Reblogs: ${green(reblogsCount)}`;
-  const replies = `Replies: ${green(repliesCount)}`;
+    const faves = `Favorites: ${green(favouritesCount)}`;
+    const reblogs = `Reblogs: ${green(reblogsCount)}`;
+    const replies = `Replies: ${green(repliesCount)}`;
 
-  console.log();
-  console.log(`Latest Mastodon status (${green(id)}) stats`);
-  console.log(`Text: ${content}`);
-  console.log(faves, reblogs, replies);
+    console.log();
+    console.log(`Latest Mastodon status (${green(id)}) stats`);
+    console.log(`Text: ${content}`);
+    console.log(faves, reblogs, replies);
+  } catch (e) {
+    throw new Error(`Error requesting Mastodon credentials/statuses.`);
+  }
 }
