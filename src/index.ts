@@ -17,8 +17,8 @@ dotenv.config({ path: path.join(projectDir, ".env") });
 
 const envVars: EnvVars = {
   //
-  blueskyEmail: process.env.BLUESKY_EMAIL!,
-  blueskyPassword: process.env.BLUESKY_PASSWORD!,
+  blueskyEmail: process.env.BLUESKY_EMAIL,
+  blueskyPassword: process.env.BLUESKY_PASSWORD,
   //
   firebaseApiKey: process.env.FIREBASE_API_KEY!,
   firebaseEmail: process.env.FIREBASE_EMAIL!,
@@ -27,8 +27,8 @@ const envVars: EnvVars = {
   instagramUserId: process.env.INSTAGRAM_USER_ID!,
   instagramAccessToken: process.env.INSTAGRAM_ACCESS_TOKEN!,
   //
-  mastodonInstaceUrl: process.env.MASTODON_INSTANCE_URL!,
-  mastodonAccessToken: process.env.MASTODON_ACCESS_TOKEN!,
+  mastodonInstaceUrl: process.env.MASTODON_INSTANCE_URL,
+  mastodonAccessToken: process.env.MASTODON_ACCESS_TOKEN,
   //
   threadsUserId: process.env.THREADS_USER_ID!,
   threadsAccessToken: process.env.THREADS_ACCESS_TOKEN!,
