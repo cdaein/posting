@@ -171,6 +171,7 @@ export function initWatchCommand(
 ) {
   program
     .command("watch")
+    .option("--stats", "Check stats of the latest posts every hour")
     // TODO: pass to uploadPost
     .option("--debug", "Debug log")
     .option("--dev", "Dev mode. No post is uploaded.")
@@ -181,36 +182,39 @@ export function initWatchCommand(
       const mastodonClient = initMastodonClient(envVars);
       const twitterClient = initTwitterClient(envVars);
 
-      // check stats every hour between 6am-midnight
-      CronJob.from({
-        start: true,
-        cronTime: userConfig.cronTime,
-        onTick: async function () {
-          console.log(`Checking stats..`);
+      // check stats
+      if (opts.stats) {
+        console.log(`Will check stats every hour between 6am and midnight.`);
+        CronJob.from({
+          start: true,
+          cronTime: userConfig.cronTime,
+          onTick: async function () {
+            console.log(`Checking stats..`);
 
-          if (blueskyAgent) {
-            try {
-              await getBlueskyStats(blueskyAgent, userConfig);
-            } catch (e) {
-              console.error(e);
+            if (blueskyAgent) {
+              try {
+                await getBlueskyStats(blueskyAgent, userConfig);
+              } catch (e) {
+                console.error(e);
+              }
             }
-          }
-          if (mastodonClient) {
-            try {
-              await getMastodonStats(mastodonClient);
-            } catch (e) {
-              console.error(e);
+            if (mastodonClient) {
+              try {
+                await getMastodonStats(mastodonClient);
+              } catch (e) {
+                console.error(e);
+              }
             }
-          }
-          if (twitterClient) {
-            try {
-              await getTwitterStats(twitterClient);
-            } catch (e) {
-              console.error(e);
+            if (twitterClient) {
+              try {
+                // await getTwitterStats(twitterClient);
+              } catch (e) {
+                console.error(e);
+              }
             }
-          }
-        },
-      });
+          },
+        });
+      }
 
       try {
         // queue (in case of many posts around the same time)

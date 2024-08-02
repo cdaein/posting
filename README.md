@@ -31,7 +31,7 @@ Run `posting watch` to monitor the `watchDir` directory. Keep the program runnin
 
 There are three ways that Posting detects scheduled posts. First, when it starts, it scans the watch directory for any existing scheduled posts. Second, it scans any new posts added while it is running. Third, it will scan the watch directory every 5 minutes to see if any existing scheduled posts are within the publish time window.
 
-`posting watch` also checks stats for your latest posts on supported platforms. It checks once per hour at 0 minute between 6am and midnight.
+If you pass `posting watch --stats` option, it checks stats (like counts, etc.) for your latest posts on supported platforms. It does once per hour at 0 minute between 6am and midnight.
 
 ## Supported Platforms
 
