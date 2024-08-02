@@ -243,8 +243,8 @@ export function initWatchCommand(
                   failedFolderPath,
                   path.basename(folderPath),
                 );
-                // FIX: use versionUpPath to handle same folder names
-                await fs.promises.rename(folderPath, newFolderPath);
+                await versionUpPath(folderPath, newFolderPath);
+                // await fs.promises.rename(folderPath, newFolderPath);
                 console.error(`Folder moved to ${yellow(newFolderPath)}`);
               } catch (e) {
                 console.error(`Error moving post folder \n${e}`);
