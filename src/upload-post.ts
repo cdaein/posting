@@ -8,17 +8,21 @@ import { TwitterApiReadWrite } from "twitter-api-v2";
 import {
   BLUESKY_IMAGE_FORMATS,
   BLUESKY_MAX_ATTACHMENTS,
+  BLUESKY_MAX_CHARS,
   BLUESKY_VIDEO_FORMATS,
   MASTODON_IMAGE_FORMATS,
   MASTODON_MAX_ATTACHMENTS,
+  MASTODON_MAX_CHARS,
   MASTODON_VIDEO_FORMATS,
   supportedPlatforms,
   supportedPostTypes,
   THREADS_IMAGE_FORMATS,
   THREADS_MAX_ATTACHMENTS,
+  THREADS_MAX_CHARS,
   THREADS_VIDEO_FORMATS,
   TWITTER_IMAGE_FORMATS,
   TWITTER_MAX_ATTACHMENTS,
+  TWITTER_MAX_CHARS,
   TWITTER_VIDEO_FORMATS,
 } from "./constants";
 import { uploadBluesky } from "./platforms/bluesky";
@@ -32,14 +36,14 @@ import { Config, EnvVars, Platform, PostSettings } from "./types";
 const { bold } = kleur;
 
 export function isPostValid(postFolderPath: string, settings: PostSettings) {
-  // TODO: max char
   // TODO: media metadata (dimensions, filesize, etc.)
   return (
     isPlatformsValid(settings) &&
     isPostTypeValid(settings) &&
     isBodyTextValid(settings) &&
     isFileInfosValid(postFolderPath, settings) &&
-    isFileFormatsValid(settings)
+    isFileFormatsValid(settings) &&
+    isCharCountValid(settings)
   );
 }
 
@@ -157,6 +161,35 @@ export async function uploadPost(
   } catch (e) {
     throw new Error(`Error in uploadPost \n${e}`);
   }
+}
+
+export function isCharCountValid(settings: PostSettings) {
+  const { platforms, bodyText } = settings;
+  const maxChars = getMaxChars(platforms);
+  if (bodyText.length > maxChars) {
+    console.error(
+      `Text exceeds the max. ${maxChars} characters for ${platforms.join(", ")}`,
+    );
+    return false;
+  }
+  return true;
+}
+
+export function getMaxChars(platforms: Platform[]) {
+  return Math.min(
+    ...platforms.map((platform) => {
+      if (platform === "bluesky") {
+        return BLUESKY_MAX_CHARS;
+      } else if (platform === "mastodon") {
+        return MASTODON_MAX_CHARS;
+      } else if (platform === "threads") {
+        return THREADS_MAX_CHARS;
+      } else if (platform === "twitter") {
+        return TWITTER_MAX_CHARS;
+      }
+      return -1;
+    }),
+  );
 }
 
 export function isFileFormatsValid(settings: PostSettings) {

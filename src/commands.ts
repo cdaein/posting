@@ -5,15 +5,7 @@ import kleur from "kleur";
 import fs from "node:fs";
 import path from "path";
 import prompts from "prompts";
-import {
-  BLUESKY_MAX_ATTACHMENTS,
-  MASTODON_MAX_ATTACHMENTS,
-  supportedPlatforms,
-  THREADS_MAX_ATTACHMENTS,
-  TIME_FUTURE_THRESHOLD,
-  TIME_PAST_THRESHOLD,
-  TWITTER_MAX_ATTACHMENTS,
-} from "./constants";
+import { TIME_FUTURE_THRESHOLD, TIME_PAST_THRESHOLD } from "./constants";
 import { getBlueskyStats, initBlueskyAgent } from "./platforms/bluesky";
 import { getMastodonStats, initMastodonClient } from "./platforms/mastodon";
 import { getTwitterStats, initTwitterClient } from "./platforms/twitter";

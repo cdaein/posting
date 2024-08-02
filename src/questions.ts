@@ -1,17 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Choice, PromptObject } from "prompts";
-import {
-  BLUESKY_MAX_CHARS,
-  defaultConfig,
-  MASTODON_MAX_CHARS,
-  THREADS_MAX_CHARS,
-  TWITTER_MAX_CHARS,
-} from "./constants";
+import { defaultConfig } from "./constants";
 import { Platform, PostType } from "./types";
 import { loadConfig } from "./utils";
 import kleur from "kleur";
-import { getCommonImageFormats, getCommonVideoFormats } from "./upload-post";
+import {
+  getCommonImageFormats,
+  getCommonVideoFormats,
+  getMaxChars,
+} from "./upload-post";
 
 const { yellow } = kleur;
 
@@ -68,21 +66,8 @@ export const bodyTextQuestionFn = (
       if (postType === "text" && value.length === 0) {
         return "Text post needs text body.";
       }
-      const maxChars = Math.min(
-        ...platforms.map((platform) => {
-          if (platform === "bluesky") {
-            return BLUESKY_MAX_CHARS;
-          } else if (platform === "mastodon") {
-            return MASTODON_MAX_CHARS;
-          } else if (platform === "threads") {
-            return THREADS_MAX_CHARS;
-          } else if (platform === "twitter") {
-            return TWITTER_MAX_CHARS;
-          }
-          return -1;
-        }),
-      );
 
+      const maxChars = getMaxChars(platforms);
       if (value.length > maxChars) {
         return `Text exceeds the max. ${maxChars} characters for ${platforms.join(", ")}`;
       }
