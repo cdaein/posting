@@ -106,6 +106,8 @@ export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
         actor: userConfig.bluesky.handle,
         limit: 1,
       });
+      // URI returned format - at://did:plc:b3qws3ybzok4crllfg67jakw/app.bsky.feed.post/3kyobz
+      // URL I need - https://bsky.app/profile/[USER_HANDLE]/post/3kyobz
       const { uri } = authorFeed.data.feed[0].post;
       const res = await agent.getPostThread({ uri });
       const { post } = res.data.thread;
@@ -114,12 +116,13 @@ export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
       const { likeCount, replyCount, repostCount } = post;
       // @ts-ignore
       const text = post.record.text as string;
+      const postUrl = `https://bsky.app/profile/${userConfig.bluesky.handle}/post/${path.basename(uri)}`;
 
       const likes = `Likes: ${green(likeCount)}`;
       const reposts = `Reblogs: ${green(repostCount)}`;
       const replies = `Replies: ${green(replyCount)}`;
 
-      console.log(`Latest ${bold("Bluesky")} (${green(uri)}) stats`);
+      console.log(`Latest ${bold("Bluesky")} (${green(postUrl)}) stats`);
       console.log(`Text: ${text}`);
       console.log(likes, reposts, replies);
     } catch (e) {

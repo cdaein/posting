@@ -9,6 +9,7 @@ import kleur from "kleur";
 
 type MostRecentTweetStats = {
   id: string;
+  username: string;
   text: string;
   organic_metrics: {
     impression_count: number;
@@ -132,8 +133,14 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
     });
     // console.log(user.data.public_metrics);
 
-    const { id, text, organic_metrics, non_public_metrics, public_metrics } =
-      user.includes?.tweets![0] as unknown as MostRecentTweetStats;
+    const {
+      id,
+      username,
+      text,
+      organic_metrics,
+      non_public_metrics,
+      public_metrics,
+    } = user.includes?.tweets![0] as unknown as MostRecentTweetStats;
 
     const impressions = `Impressions: ${green(public_metrics.impression_count)}`;
     const engagements = `Engagements: ${green(non_public_metrics.engagements)}`;
@@ -143,7 +150,10 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
     const quotes = `Quotes: ${green(public_metrics.quote_count)}`;
     const bookmarks = `Bookmarks: ${green(public_metrics.bookmark_count)}`;
 
-    console.log(`Latest ${bold("Twitter")} (${green(id)}) stats`);
+    // URL - https://x.com/[USERNAME]/status/[POST_ID]
+    const postUrl = `https://x.com/${username}/status/${id}`;
+
+    console.log(`Latest ${bold("Twitter")} (${green(postUrl)}) stats`);
     console.log(`Text: ${text}`);
     console.log(
       impressions,

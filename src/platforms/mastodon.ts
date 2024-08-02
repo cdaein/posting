@@ -82,14 +82,14 @@ export async function getMastodonStats(client: mastodon.rest.Client) {
       .$select(userId)
       .statuses.list({ limit: 1 });
 
-    const { id, content, favouritesCount, reblogsCount, repliesCount } =
+    const { id, content, url, favouritesCount, reblogsCount, repliesCount } =
       statuses[0];
 
     const faves = `Favorites: ${green(favouritesCount)}`;
     const reblogs = `Reblogs: ${green(reblogsCount)}`;
     const replies = `Replies: ${green(repliesCount)}`;
 
-    console.log(`Latest ${bold("Mastodon")} (${green(id)}) stats`);
+    console.log(`Latest ${bold("Mastodon")} (${green(url!)}) stats`);
     console.log(`Text: ${content}`);
     console.log(faves, reblogs, replies);
   } catch (e) {
