@@ -27,6 +27,7 @@ import { Config, EnvVars, Platform, PostType } from "./types";
 import { uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
 import { watchStart } from "./watcher";
+import { CronJob } from "cron";
 
 const { bold, green, red, yellow } = kleur;
 
@@ -180,29 +181,36 @@ export function initWatchCommand(
       const mastodonClient = initMastodonClient(envVars);
       const twitterClient = initTwitterClient(envVars);
 
-      // TODO: setInterval this
-      if (blueskyAgent) {
-        try {
-          await getBlueskyStats(blueskyAgent, userConfig);
-        } catch (e) {
-          console.error(e);
-          console.error(`Error getting Bluesky stats.`);
-        }
-      }
-      if (mastodonClient) {
-        try {
-          // await getMastodonStats(mastodonClient);
-        } catch (e) {
-          console.error(`Error getting Mastodon stats.`);
-        }
-      }
-      if (twitterClient) {
-        try {
-          // await getTwitterStats(twitterClient);
-        } catch (e) {
-          console.error(`Error getting the latest Twitter stats.`);
-        }
-      }
+      CronJob.from({
+        start: true,
+        cronTime: "* 0 * * * *",
+        onTick: async function () {
+          console.log(`Checking stats..`);
+
+          if (blueskyAgent) {
+            try {
+              await getBlueskyStats(blueskyAgent, userConfig);
+            } catch (e) {
+              console.error(e);
+              console.error(`Error getting Bluesky stats.`);
+            }
+          }
+          if (mastodonClient) {
+            try {
+              await getMastodonStats(mastodonClient);
+            } catch (e) {
+              console.error(`Error getting Mastodon stats.`);
+            }
+          }
+          if (twitterClient) {
+            try {
+              await getTwitterStats(twitterClient);
+            } catch (e) {
+              console.error(`Error getting the latest Twitter stats.`);
+            }
+          }
+        },
+      });
 
       try {
         // queue (in case of many posts around the same time)
