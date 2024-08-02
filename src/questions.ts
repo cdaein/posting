@@ -127,6 +127,7 @@ export const multiFilesQuestionFn = (
       },
       validate: (value: string) => {
         const trimmed = value.trim();
+        // TODO: handle relative path ~ or ./
 
         // at least 1 attachment is required
         if (numAttached === 0 && !fs.existsSync(trimmed)) {

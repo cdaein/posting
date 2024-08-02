@@ -1,19 +1,80 @@
+import { BskyAgent } from "@atproto/api";
 import { FirebaseStorage } from "firebase/storage";
 import kleur from "kleur";
 import { mastodon } from "masto";
 import fs from "node:fs";
 import path from "path";
 import { TwitterApiReadWrite } from "twitter-api-v2";
+import {
+  BLUESKY_MAX_ATTACHMENTS,
+  MASTODON_MAX_ATTACHMENTS,
+  supportedPlatforms,
+  supportedPostTypes,
+  THREADS_MAX_ATTACHMENTS,
+  TWITTER_MAX_ATTACHMENTS,
+} from "./constants";
 import { uploadBluesky } from "./platforms/bluesky";
 import { uploadInstagram } from "./platforms/instagram";
 import { uploadMastodon } from "./platforms/mastodon";
 import { uploadThreads } from "./platforms/threads";
 import { uploadTwitter } from "./platforms/twitter";
 import { initFirebase } from "./storages/firebase";
-import { Config, EnvVars, PostSettings } from "./types";
-import { BskyAgent } from "@atproto/api";
+import { Config, EnvVars, Platform, PostSettings } from "./types";
 
 const { bold } = kleur;
+
+export function isPostValid(postFolderPath: string, settings: PostSettings) {
+  // TODO: supported file formats per platform
+  return (
+    isPlatformsValid(settings) &&
+    isPostTypeValid(settings) &&
+    isBodyTextValid(settings) &&
+    isFileInfosValid(postFolderPath, settings)
+  );
+}
+
+export function readSettings(postFolderPath: string) {
+  const settingsPath = path.join(postFolderPath, "settings.json");
+  if (!fs.existsSync(settingsPath)) {
+    throw new Error(`Not found: settings.json in ${postFolderPath}`);
+  }
+  // read and parse settings.json
+  const settings: PostSettings = JSON.parse(
+    fs.readFileSync(settingsPath, "utf8"),
+  );
+  return settings;
+}
+
+export function isFileInfosValid(
+  postFolderPath: string,
+  settings: PostSettings,
+) {
+  const { platforms, postType, fileInfos } = settings;
+  if (postType === "media") {
+    // fileInfos.length > 0
+    if (!fileInfos || fileInfos.length === 0) {
+      console.error(`fileInfos are required for media post`);
+      return false;
+    }
+    // number of files to upload
+    const numFileInfos = fileInfos.length;
+    const maxAttach = getMaxAttachments(platforms);
+    if (numFileInfos > maxAttach) {
+      console.error(`Exceeded maximum number of attachments ${maxAttach}`);
+    }
+
+    for (const fileInfo of fileInfos) {
+      const { filename } = fileInfo;
+      const filePath = path.join(postFolderPath, filename.trim());
+      if (!fs.existsSync(filePath)) {
+        console.error(`File not found: ${filePath}`);
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
 
 /**
  * @param postFolderPath - Folder where post is in (image, video, settings.json)
@@ -31,29 +92,13 @@ export async function uploadPost(
   dev: boolean,
 ) {
   try {
-    // check settings.json
-    const settingsPath = path.join(postFolderPath, "settings.json");
-    if (!fs.existsSync(settingsPath)) {
-      console.error(`settings.json not found in ${postFolderPath}`);
-      return false;
+    const settings = readSettings(postFolderPath);
+
+    if (!isPostValid(postFolderPath, settings)) {
+      throw new Error(`Found problem with post folder in ${postFolderPath}`);
     }
-    // read and parse settings.json
-    const settings: PostSettings = JSON.parse(
-      fs.readFileSync(settingsPath, "utf8"),
-    );
+
     const { postType, platforms, bodyText, fileInfos } = settings;
-
-    if (!postType) {
-      console.error(`Missing postType in ${settingsPath}`);
-      return false;
-    }
-    if (!platforms || platforms.length === 0) {
-      console.error(`Missing platforms in ${settingsPath}`);
-      return false;
-    }
-
-    // TODO: check for incorrect postType (ex. set to text, but image file present.)
-    // b/c things may have been changed by user since scheduling
 
     console.log("===============");
     console.log(`Processing ${bold(path.basename(postFolderPath))}`);
@@ -133,4 +178,60 @@ export async function uploadPost(
   } catch (e) {
     throw new Error(`Error in uploadPost \n${e}`);
   }
+}
+
+// minimum of all platforms max attachments
+export function getMaxAttachments(platforms: Platform[]) {
+  return Math.min(
+    ...platforms.map((platform) => {
+      if (platform === "bluesky") return BLUESKY_MAX_ATTACHMENTS;
+      else if (platform === "mastodon") return MASTODON_MAX_ATTACHMENTS;
+      else if (platform === "threads") return THREADS_MAX_ATTACHMENTS;
+      else if (platform === "twitter") return TWITTER_MAX_ATTACHMENTS;
+      return -1;
+    }),
+  );
+}
+
+export function isBodyTextValid(settings: PostSettings) {
+  const { postType, bodyText } = settings;
+  if (!bodyText) {
+    console.log(`Not found: bodyText field`);
+    return false;
+  }
+  if (postType === "text" && bodyText.length === 0) {
+    console.error(`bodyText is required in text post.`);
+    return false;
+  }
+  return true;
+}
+
+export function isPostTypeValid(settings: PostSettings) {
+  const { postType } = settings;
+  if (!postType) {
+    console.error(`Missing postType`);
+    return false;
+  }
+  if (!supportedPostTypes.includes(postType)) {
+    console.error(`Found unsupported postType: ${postType}`);
+    return false;
+  }
+  return true;
+}
+
+export function isPlatformsValid(settings: PostSettings) {
+  const { platforms } = settings;
+  // 1. length > 0
+  if (!platforms || platforms.length === 0) {
+    console.error(`Missing platforms`);
+    return false;
+  }
+  // 2. values
+  for (const platform of platforms) {
+    if (!supportedPlatforms.includes(platform)) {
+      console.error(`Found unsupported platform: ${platform}`);
+      return false;
+    }
+  }
+  return true;
 }

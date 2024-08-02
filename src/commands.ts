@@ -8,6 +8,7 @@ import prompts from "prompts";
 import {
   BLUESKY_MAX_ATTACHMENTS,
   MASTODON_MAX_ATTACHMENTS,
+  supportedPlatforms,
   THREADS_MAX_ATTACHMENTS,
   TIME_FUTURE_THRESHOLD,
   TIME_PAST_THRESHOLD,
@@ -24,8 +25,8 @@ import {
   platformsQuestion,
   postTypeQuestion,
 } from "./questions";
-import { Config, EnvVars, Platform, PostType } from "./types";
-import { uploadPost } from "./upload-post";
+import { Config, EnvVars, Platform, PostSettings, PostType } from "./types";
+import { getMaxAttachments, uploadPost } from "./upload-post";
 import { formatPostFolderName } from "./utils";
 import { watchStart } from "./watcher";
 
@@ -61,16 +62,7 @@ export function initCreateCommand(program: Command, watchDir: string) {
 
       // ask for multiple file paths and descriptions (alt text)
       const fileInfos: { mediaPath: string; altText: string }[] = [];
-      // minimum of all platforms max attachments
-      const maxAttachments = Math.min(
-        ...platforms.map((platform) => {
-          if (platform === "bluesky") return BLUESKY_MAX_ATTACHMENTS;
-          else if (platform === "mastodon") return MASTODON_MAX_ATTACHMENTS;
-          else if (platform === "threads") return THREADS_MAX_ATTACHMENTS;
-          else if (platform === "twitter") return TWITTER_MAX_ATTACHMENTS;
-          return -1;
-        }),
-      );
+      const maxAttachments = getMaxAttachments(platforms);
       // ask files to attach until answer is empty
       let numAttached = 0;
       let askMoreAttachment = true;
@@ -238,6 +230,7 @@ export function initWatchCommand(
                   publishedFolderPath,
                   path.basename(folderPath),
                 );
+                // TODO: handle relative path ~ or ./
                 await fs.promises.rename(folderPath, newFolderPath);
 
                 console.log(`\nFolder moved to ${yellow(newFolderPath)}`);

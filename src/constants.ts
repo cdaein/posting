@@ -1,4 +1,4 @@
-import { Config } from "./types";
+import { Config, Platform, PostType } from "./types";
 
 export const defaultConfig: Config = {
   watchDir: "~/Desktop/Scheduled-Social-Posts",
@@ -13,6 +13,15 @@ export const defaultConfig: Config = {
     port: 8080,
   },
 };
+
+export const supportedPlatforms: Platform[] = [
+  "bluesky",
+  "instagram",
+  "mastodon",
+  "threads",
+  "twitter",
+];
+export const supportedPostTypes: PostType[] = ["text", "media"];
 
 // in minutes
 export const TIME_PAST_THRESHOLD = -10;
