@@ -8,23 +8,23 @@ import kleur from "kleur";
 const { yellow } = kleur;
 
 /**
- * Rename path (and move if path is different). If already exists, add number suffix at the end.
+ * Rename and move path.  If already exists, add number suffix at the end.
+ * If `how === rename`, original will be moved. use `copy` to keep the original file/folder
  * If `isDirectory = false`, suffix is added before extension.
- * TODO: not tested for file version up yet.
  *
  * @param oldPath - file or directory
  * @param newPath - file or directory
+ * @param how - rename (affect original) or copy (original intact)
  * @param isDirectory -  default: `true`
  */
 export const versionUpPath = async (
   oldPath: string,
   newPath: string,
+  how: "rename" | "copy",
   isDirectory = true,
 ) => {
   const newFolderPath = path.dirname(newPath);
   const ext = path.extname(newPath);
-  // const baseWithoutExt = path.basename(newPath, ext);
-  // const ext = path.extname(newPath);
   const baseWithoutExt = isDirectory
     ? path.basename(newPath)
     : path.basename(newPath, ext);
@@ -33,7 +33,6 @@ export const versionUpPath = async (
   // number up if existing file found and not overwriting
   while (fs.existsSync(newPath)) {
     count++;
-    // newPath = path.join(newFolderPath, `${baseWithoutExt}-${count}${ext}`);
     newPath = path.join(
       newFolderPath,
       `${baseWithoutExt}-${count}${isDirectory ? "" : ext}`,
@@ -41,8 +40,14 @@ export const versionUpPath = async (
   }
 
   try {
-    await fs.promises.rename(oldPath, newPath);
-    console.log(`Path renamed to ${yellow(newPath)}`);
+    if (how === "rename") {
+      await fs.promises.rename(oldPath, newPath);
+    } else if (how === "copy") {
+      await fs.promises.copyFile(oldPath, newPath);
+    }
+    // console.log(
+    //   `Path ${how === "rename" ? "renamed" : "copied"} to ${yellow(newPath)}`,
+    // );
     return newPath;
   } catch (e) {
     throw new Error(`Error renaming the path: ${e}`);

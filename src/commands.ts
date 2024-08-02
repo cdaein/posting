@@ -102,12 +102,17 @@ export function initCreateCommand(program: Command, watchDir: string) {
             folderPath,
             path.basename(filePathTrimmed),
           );
-          console.log(
-            `Copying media file from ${yellow(filePathTrimmed)} to ${yellow(targetFilePath)}`,
+          // if filenames are same (but could be from different path), version up name when copying
+          const renamedPath = await versionUpPath(
+            filePathTrimmed,
+            targetFilePath,
+            "copy",
+            false,
           );
-          // TODO: use versionUpPath() to version up same file names (b/c maybe, they are from different original paths)
-          fs.copyFileSync(filePathTrimmed, targetFilePath);
-          targetFilePaths.push(targetFilePath);
+          console.log(
+            `Copied media file from ${yellow(filePathTrimmed)} to ${yellow(renamedPath)}`,
+          );
+          targetFilePaths.push(renamedPath);
         }
       }
 
@@ -222,6 +227,7 @@ export function initWatchCommand(
                 const renamedPath = await versionUpPath(
                   folderPath,
                   newFolderPath,
+                  "rename",
                 );
                 console.log(`Folder moved to ${yellow(renamedPath)}`);
               } catch (e) {
@@ -243,7 +249,7 @@ export function initWatchCommand(
                   failedFolderPath,
                   path.basename(folderPath),
                 );
-                await versionUpPath(folderPath, newFolderPath);
+                await versionUpPath(folderPath, newFolderPath, "rename");
                 // await fs.promises.rename(folderPath, newFolderPath);
                 console.error(`Folder moved to ${yellow(newFolderPath)}`);
               } catch (e) {
@@ -280,7 +286,7 @@ export function initWatchCommand(
         process.on("SIGINT", () => {
           console.log("Received SIGINT. Exiting...");
           clearInterval(intervalId);
-          process.exit(); // Exit the process after clearing the interval
+          process.exit();
         });
       } catch (e) {
         console.error(e);
