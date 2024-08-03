@@ -8,6 +8,7 @@ import prompts from "prompts";
 import { TIME_FUTURE_THRESHOLD, TIME_PAST_THRESHOLD } from "./constants";
 import { getBlueskyStats, initBlueskyAgent } from "./platforms/bluesky";
 import { getMastodonStats, initMastodonClient } from "./platforms/mastodon";
+import { getThreadsStats } from "./platforms/threads";
 import { getTwitterStats, initTwitterClient } from "./platforms/twitter";
 import { processFolder } from "./process-folder";
 import {
@@ -21,7 +22,6 @@ import { Config, EnvVars, Platform, PostType } from "./types";
 import { getMaxAttachments, uploadPost } from "./upload-post";
 import { formatPostFolderName, versionUpPath } from "./utils";
 import { watchStart } from "./watcher";
-import { getThreadsStats } from "./platforms/threads";
 
 const { bold, green, red, yellow } = kleur;
 
@@ -122,7 +122,6 @@ export function initCreateCommand(program: Command, watchDir: string) {
         postType,
         platforms,
         bodyText,
-        // filenames: targetFilePaths.map((filePath) => path.basename(filePath)),
         fileInfos: fileInfos.map((fileInfo, i) => {
           return {
             filename: path.basename(targetFilePaths[i]),
@@ -175,7 +174,9 @@ export function initWatchCommand(
           start: true,
           cronTime: userConfig.cronTime,
           onTick: async function () {
-            console.log(`Checking stats.. (as of ${new Date().toISOString()})`);
+            console.log(
+              `Checking stats.. (as of ${bold(new Date().toLocaleString())})`,
+            );
 
             if (blueskyAgent) {
               try {
