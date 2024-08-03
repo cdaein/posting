@@ -181,29 +181,29 @@ export function initWatchCommand(
             if (blueskyAgent) {
               try {
                 await getBlueskyStats(blueskyAgent, userConfig);
-              } catch (e) {
-                console.error(e);
+              } catch (e: unknown) {
+                e instanceof Error && console.error(e.message);
               }
             }
             if (envVars.threadsUserId && envVars.threadsAccessToken) {
               try {
                 await getThreadsStats(envVars);
               } catch (e) {
-                console.error(e);
+                e instanceof Error && console.error(e.message);
               }
             }
             if (mastodonClient) {
               try {
                 await getMastodonStats(mastodonClient);
               } catch (e) {
-                console.error(e);
+                e instanceof Error && console.error(e.message);
               }
             }
             if (twitterClient) {
               try {
                 await getTwitterStats(twitterClient);
               } catch (e) {
-                console.error(e);
+                e instanceof Error && console.error(e.message);
               }
             }
           },
