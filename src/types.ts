@@ -32,11 +32,11 @@ export type Config = {
       storageBucket: string;
     };
   };
-  ngrok: {
-    port: number;
-  };
   bluesky?: {
     handle: string;
+  };
+  mastodon?: {
+    instanceUrl: string;
   };
 };
 

@@ -9,9 +9,6 @@ export const defaultConfig: Config = {
       storageBucket: "",
     },
   },
-  ngrok: {
-    port: 8080,
-  },
 };
 
 export const supportedPlatforms: Platform[] = [

@@ -1,6 +1,6 @@
 import { createRestAPIClient, mastodon } from "masto";
 import fs from "node:fs";
-import type { EnvVars, PostSettings } from "../types";
+import type { Config, EnvVars, PostSettings } from "../types";
 import path from "node:path";
 import kleur from "kleur";
 
@@ -11,10 +11,10 @@ interface MediaAttachment {
 
 const { bold, green, yellow } = kleur;
 
-export function initMastodonClient(envVars: EnvVars) {
-  if (envVars.mastodonInstaceUrl && envVars.mastodonAccessToken) {
+export function initMastodonClient(envVars: EnvVars, userConfig: Config) {
+  if (userConfig.mastodon?.instanceUrl && envVars.mastodonAccessToken) {
     return createRestAPIClient({
-      url: envVars.mastodonInstaceUrl,
+      url: userConfig.mastodon.instanceUrl,
       accessToken: envVars.mastodonAccessToken,
     });
   }
@@ -35,7 +35,6 @@ export async function uploadMastodon(
 
   const mediaAttachments: MediaAttachment[] = [];
 
-  // for (const filename of filenames) {
   for (const fileInfo of fileInfos) {
     const { filename, altText } = fileInfo;
     console.log(`Uploading ${yellow(filename)}`);

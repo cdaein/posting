@@ -41,6 +41,7 @@ If you pass `posting watch --stats` option, it checks stats (like counts, etc.) 
   - You need Bluesky email and password in `.env`. Also, put your handle without `@` symbol in `user.config.json` to check stats.
   - Bluesky only supports image post.
 - Mastodon
+  - Add your instance url to `user.config.json`. ex. `"instanceUrl": "https://mastodon.social"`
   - Getting API Key is very easy. Just go to your instance, click Preferences > Developement. Create a New Application with read/write access. Then, copy the Access Token to `.env`.
 - ~~Instagram~~
   - IG API doesn't work as I expect it to. It's one of the worst APIs I've ever had to deal with.

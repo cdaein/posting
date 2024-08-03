@@ -164,7 +164,7 @@ export function initWatchCommand(
       console.log(`Watching ${yellow(watchDir)}`);
 
       const blueskyAgent = await initBlueskyAgent(envVars);
-      const mastodonClient = initMastodonClient(envVars);
+      const mastodonClient = initMastodonClient(envVars, userConfig);
       const twitterClient = initTwitterClient(envVars);
 
       // check stats
