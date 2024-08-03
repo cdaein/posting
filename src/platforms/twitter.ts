@@ -129,9 +129,10 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
         "organic_metrics",
       ],
       // @ts-ignore
-      "user.fields": ["most_recent_tweet_id", "public_metrics"],
+      "user.fields": ["username", "most_recent_tweet_id", "public_metrics"],
     });
     // console.log(user.data.public_metrics);
+    console.log(user);
 
     const {
       id,
@@ -142,8 +143,8 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
       public_metrics,
     } = user.includes?.tweets![0] as unknown as MostRecentTweetStats;
 
-    const impressions = `Impressions: ${green(public_metrics.impression_count)}`;
-    const engagements = `Engagements: ${green(non_public_metrics.engagements)}`;
+    // const impressions = `Impressions: ${green(public_metrics.impression_count)}`;
+    // const engagements = `Engagements: ${green(non_public_metrics.engagements)}`;
     const likes = `Likes: ${green(organic_metrics.like_count)}`;
     const retweets = `Retweets: ${green(organic_metrics.retweet_count)}`;
     const reply = `Replies: ${green(organic_metrics.reply_count)}`;
@@ -156,8 +157,8 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
     console.log(`Latest ${bold("Twitter")} (${green(postUrl)}) stats`);
     console.log(`Text: ${text}`);
     console.log(
-      impressions,
-      engagements,
+      // impressions,
+      // engagements,
       likes,
       retweets,
       reply,

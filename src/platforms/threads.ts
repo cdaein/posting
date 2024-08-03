@@ -321,15 +321,15 @@ export async function getThreadsStats(envVars: EnvVars) {
     {},
   );
 
-  const viewsStr = `Views: ${green(views)}`;
+  // const viewsStr = `Views: ${green(views)}`;
   const likesStr = `Likes: ${green(likes)}`;
   const repliesStr = `Replies: ${green(replies)}`;
   const repostsStr = `Reposts: ${green(reposts)}`;
   const quotesStr = `Quotes: ${green(quotes)}`;
 
-  console.log(`Latest Threads post (${green(permalink)}) stats`);
+  console.log(`Latest ${bold("Threads")} (${green(permalink)}) stats`);
   console.log(`Text: ${text}`);
-  console.log(viewsStr, likesStr, repliesStr, repostsStr, quotesStr);
+  console.log(likesStr, repliesStr, repostsStr, quotesStr);
 }
 
 // Refresh access token before expiration
