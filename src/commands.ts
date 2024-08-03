@@ -175,7 +175,7 @@ export function initWatchCommand(
           cronTime: userConfig.cronTime,
           onTick: async function () {
             console.log(
-              `Checking stats.. (as of ${bold(new Date().toLocaleString())})`,
+              `\nChecking stats.. (as of ${bold(new Date().toLocaleString())})`,
             );
 
             if (blueskyAgent) {

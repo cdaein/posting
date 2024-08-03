@@ -123,7 +123,7 @@ export const multiFilesQuestionFn = (
       type: (prev) => (prev.trim().length > 0 ? "text" : null),
       name: "altText",
       message: (prev) => {
-        return `Add description for ${yellow(path.basename(prev))}`;
+        return `Alt text for ${yellow(path.basename(prev))}`;
       },
     },
   ];
