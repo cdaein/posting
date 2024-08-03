@@ -131,17 +131,10 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
       // @ts-ignore
       "user.fields": ["username", "most_recent_tweet_id", "public_metrics"],
     });
-    // console.log(user.data.public_metrics);
-    console.log(user);
 
-    const {
-      id,
-      username,
-      text,
-      organic_metrics,
-      non_public_metrics,
-      public_metrics,
-    } = user.includes?.tweets![0] as unknown as MostRecentTweetStats;
+    const username = user.data.username;
+    const { id, text, organic_metrics, non_public_metrics, public_metrics } =
+      user.includes?.tweets![0] as unknown as MostRecentTweetStats;
 
     // const impressions = `Impressions: ${green(public_metrics.impression_count)}`;
     // const engagements = `Engagements: ${green(non_public_metrics.engagements)}`;
