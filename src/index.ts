@@ -30,8 +30,10 @@ const envVars: EnvVars = {
   mastodonInstaceUrl: process.env.MASTODON_INSTANCE_URL,
   mastodonAccessToken: process.env.MASTODON_ACCESS_TOKEN,
   //
-  threadsUserId: process.env.THREADS_USER_ID!,
-  threadsAccessToken: process.env.THREADS_ACCESS_TOKEN!,
+  threadsAppId: process.env.THREADS_APP_ID,
+  threadsAppSecret: process.env.THREADS_APP_SECRET,
+  threadsUserId: process.env.THREADS_USER_ID,
+  threadsAccessToken: process.env.THREADS_ACCESS_TOKEN,
   //
   twitterAppKey: process.env.TWITTER_API_KEY,
   twitterAppSecret: process.env.TWITTER_API_KEY_SECRET,

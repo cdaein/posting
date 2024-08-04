@@ -9,6 +9,7 @@ import { THREADS_API_URL, THREADS_IMAGE_FORMATS } from "../constants";
 import { uploadFirebase } from "../storages/firebase";
 import { Config, EnvVars, PostSettings } from "../types";
 import kleur from "kleur";
+import { ThreadsClient } from "../clients/threads-client";
 
 export type ThreadsMediaType = "TEXT" | "IMAGE" | "VIDEO" | "CAROUSEL";
 
@@ -30,15 +31,6 @@ export type ThreadsPublishData = {
   access_token: string;
 };
 
-export type ThreadsPostInsights = {
-  name: "views" | "likes" | "replies" | "reposts" | "quotes";
-  period: string;
-  values: { value: number }[];
-  title: string;
-  description: string;
-  id: string;
-};
-
 const { bold, green, yellow } = kleur;
 
 // TODO: separate Firebase logic out of uploadThreads as I may change provider later?
@@ -56,15 +48,15 @@ const { bold, green, yellow } = kleur;
  */
 export async function uploadThreads(
   envVars: EnvVars,
+  client: ThreadsClient,
   folderPath: string,
   settings: PostSettings,
-  userConfig: Config,
   storage: FirebaseStorage,
   firebaseUid: string,
   dev: boolean,
 ) {
-  const USER_ID = envVars.threadsUserId;
-  const ACCESS_TOKEN = envVars.threadsAccessToken;
+  const USER_ID = envVars.threadsUserId!;
+  const ACCESS_TOKEN = envVars.threadsAccessToken!;
 
   const { postType, bodyText, fileInfos } = settings;
 
@@ -76,6 +68,7 @@ export async function uploadThreads(
   }
 
   let publishData: ThreadsPublishData;
+  let carouselContainerID = "";
 
   if (postType === "text") {
     // 1. text only post
@@ -153,17 +146,14 @@ export async function uploadThreads(
       }
 
       for (const containerId of mediaContainerIDs) {
-        await checkContainerStatus({
-          creation_id: containerId,
-          access_token: ACCESS_TOKEN,
-        });
+        await checkContainerStatus(client, containerId);
       }
 
       // 3.c. create carousel media container ID
       console.log(
         `Creating a carousel container for ${green(mediaContainerIDs.join(","))}`,
       );
-      const carouselContainerID = await createMediaContainer(USER_ID, {
+      carouselContainerID = await createMediaContainer(USER_ID, {
         media_type: "CAROUSEL",
         children: mediaContainerIDs.join(","),
         text: bodyText,
@@ -181,7 +171,7 @@ export async function uploadThreads(
 
   // media container may not be immedidiately ready to publish. (ie. big files)
   // per IG API: query a container's status once per minute, for no more than 5 minutes.
-  await checkContainerStatus(publishData);
+  await checkContainerStatus(client, carouselContainerID);
 
   console.log(`Publishing on ${bold("Threads")}..`);
   const status = await axios
@@ -206,27 +196,21 @@ export async function uploadThreads(
 }
 
 async function checkContainerStatus(
-  publishData: ThreadsPublishData,
+  client: ThreadsClient,
+  creationId: string,
   maxRetries = 5,
   interval = 1000 * 60,
 ) {
-  const { creation_id, access_token } = publishData;
   let retries = 0;
 
   while (retries < maxRetries) {
     try {
-      const response = await axios.get(`${THREADS_API_URL}/${creation_id}`, {
-        params: {
-          fields: "status,error_message",
-          access_token,
-        },
-      });
-
-      const { status, error_message } = response.data;
+      const { status, error_message } =
+        await client.checkContainerStatus(creationId);
       console.log(`Container status: ${status} (try ${retries + 1})`);
 
       if (status === "FINISHED") {
-        console.log(`${green(creation_id)} is ready to publish.`);
+        console.log(`${green(creationId)} is ready to publish.`);
         return;
       } else if (status === "ERROR") {
         console.error(`Media container failed.`);
@@ -263,73 +247,25 @@ async function createMediaContainer(
 }
 
 // https://developers.facebook.com/docs/threads/insights
-export async function getThreadsStats(envVars: EnvVars) {
-  // retrieve my user ID
-  // REVIEW: request userId once at start of program
-  const me = await axios
-    .get(`${THREADS_API_URL}/me`, {
-      params: {
-        fileds: "id,username",
-        access_token: envVars.threadsAccessToken,
-      },
-    })
-    .then((res) => res.data)
-    .catch((e) => {
-      console.error(e.response?.data);
-      throw new Error(`Error retrieving my info on Threads \n${e}`);
-    });
-  const { id: userId } = me;
+export async function getThreadsStats(client: ThreadsClient) {
+  const { id: mediaId, text, permalink } = (await client.getUserData(1))[0];
 
-  // retrieve the latest post of a user (limit:1)
-  const userData = await axios
-    .get(`${THREADS_API_URL}/${userId}/threads`, {
-      // .get(`${THREADS_API_URL}/me/threads`, {
-      params: {
-        limit: 1,
-        fields: "id,text,media_url,permalink",
-        access_token: envVars.threadsAccessToken,
-      },
-    })
-    .then((res) => res.data)
-    .catch((e) => {
-      console.error(e.response?.data);
-      throw new Error(`Error retrieving latest post ID on Threads \n${e}`);
-    });
+  try {
+    const { likes, replies, reposts, quotes } =
+      await client.getPostInsights(mediaId);
 
-  const posts = userData.data;
-  const { id: mediaId, text, permalink } = posts[0];
-
-  // media insights for latest post
-  const postData: ThreadsPostInsights[] = await axios
-    .get(`${THREADS_API_URL}/${mediaId}/insights`, {
-      params: {
-        metric: "views,likes,replies,reposts,quotes",
-        access_token: envVars.threadsAccessToken,
-      },
-    })
-    .then((res) => res.data.data)
-    .catch((e) => {
-      console.error(e.response?.data);
-      throw new Error(`Error retrieving post data on Threads \n${e}`);
-    });
-
-  const { views, likes, replies, reposts, quotes } = postData.reduce(
-    (acc: Record<string, number>, curr: ThreadsPostInsights) => {
-      acc[curr.name] = curr.values[0].value;
-      return acc;
-    },
-    {},
-  );
-
-  // const viewsStr = `Views: ${green(views)}`;
-  const likesStr = `Likes: ${green(likes)}`;
-  const repliesStr = `Replies: ${green(replies)}`;
-  const repostsStr = `Reposts: ${green(reposts)}`;
-  const quotesStr = `Quotes: ${green(quotes)}`;
-
-  console.log(`Latest ${bold("Threads")} (${green(permalink)}) stats`);
-  console.log(`Text: ${text}`);
-  console.log(likesStr, repliesStr, repostsStr, quotesStr);
+    // const viewsStr = `Views: ${green(views)}`;
+    const likesStr = `Likes: ${green(likes)}`;
+    const repliesStr = `Replies: ${green(replies)}`;
+    const repostsStr = `Reposts: ${green(reposts)}`;
+    const quotesStr = `Quotes: ${green(quotes)}`;
+    console.log(`Latest ${bold("Threads")} (${green(permalink)}) stats`);
+    console.log(`Text: ${text}`);
+    console.log(likesStr, repliesStr, repostsStr, quotesStr);
+  } catch (e: any) {
+    console.error(e.response?.data);
+    throw new Error(`Error retrieving post data on Threads \n${e}`);
+  }
 }
 
 // Refresh access token before expiration

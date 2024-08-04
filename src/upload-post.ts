@@ -33,6 +33,7 @@ import { uploadTwitter } from "./platforms/twitter";
 import { initFirebase } from "./storages/firebase";
 import { Config, EnvVars, Platform, PostSettings } from "./types";
 import { waitForFile } from "./utils";
+import { ThreadsClient } from "./clients/threads-client";
 
 const { bold } = kleur;
 
@@ -76,6 +77,7 @@ export async function uploadPost(
   clients: {
     blueskyAgent?: BskyAgent;
     mastodonClient?: mastodon.rest.Client;
+    threadsClient?: ThreadsClient;
     twitterClient?: TwitterApiReadWrite;
   },
   postFolderPath: string,
@@ -148,9 +150,9 @@ export async function uploadPost(
         // refactor necessary. maybe, upload files here, and just pass the URLs.
         await uploadThreads(
           envVars,
+          clients.threadsClient!,
           postFolderPath,
           settings,
-          userConfig,
           storage!,
           firebaseUid,
           dev,

@@ -22,6 +22,7 @@ import { Config, EnvVars, Platform, PostType } from "./types";
 import { getMaxAttachments, uploadPost } from "./upload-post";
 import { formatPostFolderName, versionUpPath } from "./utils";
 import { watchStart } from "./watcher";
+import { initThreadsClient } from "./clients/threads-client";
 
 const { bold, green, red, yellow } = kleur;
 
@@ -164,6 +165,7 @@ export function initWatchCommand(
 
       const blueskyAgent = await initBlueskyAgent(envVars);
       const mastodonClient = initMastodonClient(envVars, userConfig);
+      const threadsClient = initThreadsClient(envVars);
       const twitterClient = initTwitterClient(envVars);
 
       // check stats
@@ -185,9 +187,9 @@ export function initWatchCommand(
                 e instanceof Error && console.error(e.message);
               }
             }
-            if (envVars.threadsUserId && envVars.threadsAccessToken) {
+            if (threadsClient) {
               try {
-                await getThreadsStats(envVars);
+                await getThreadsStats(threadsClient);
               } catch (e) {
                 e instanceof Error && console.error(e.message);
               }
@@ -216,7 +218,7 @@ export function initWatchCommand(
           console.log(`Added to queue ${yellow(folderPath)}`);
           uploadPost(
             envVars,
-            { blueskyAgent, mastodonClient, twitterClient },
+            { blueskyAgent, mastodonClient, threadsClient, twitterClient },
             folderPath,
             userConfig,
             opts.dev,

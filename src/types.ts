@@ -13,8 +13,10 @@ export type EnvVars = {
   mastodonInstaceUrl?: string;
   mastodonAccessToken?: string;
   //
-  threadsUserId: string;
-  threadsAccessToken: string;
+  threadsAppId?: string;
+  threadsAppSecret?: string;
+  threadsUserId?: string;
+  threadsAccessToken?: string;
   //
   twitterAppKey?: string;
   twitterAppSecret?: string;
