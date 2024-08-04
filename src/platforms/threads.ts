@@ -1,9 +1,7 @@
-import axios from "axios";
-import { deleteObject } from "firebase/storage";
 import kleur from "kleur";
 import path from "node:path";
 import { ThreadsClient } from "../clients/threads-client";
-import { THREADS_API_URL, THREADS_IMAGE_FORMATS } from "../constants";
+import { THREADS_IMAGE_FORMATS } from "../constants";
 import { FirebaseFileInfo } from "../storages/firebase";
 import { PostSettings } from "../types";
 
@@ -189,32 +187,3 @@ export async function getThreadsStats(client: ThreadsClient) {
     throw new Error(`Error retrieving post data on Threads \n${e}`);
   }
 }
-
-// Refresh access token before expiration
-// WARN: BELOW NOT TESTED YET!!!
-
-// // Load existing .env file
-// const envFilePath = path.resolve(__dirname, ".env");
-// const envFileContent = fs.readFileSync(envFilePath, "utf8");
-//
-// // Function to update the .env file
-// function updateEnvFile(key, value) {
-//   const newEnvContent = envFileContent
-//     .split("\n")
-//     .map((line) => {
-//       // If the line starts with the key, replace the value
-//       if (line.startsWith(`${key}=`)) {
-//         return `${key}=${value}`;
-//       }
-//       return line;
-//     })
-//     .join("\n");
-//
-//   // Write the new content back to the .env file
-//   fs.writeFileSync(envFilePath, newEnvContent, "utf8");
-//   console.log(`${key} has been updated in the .env file.`);
-// }
-//
-// // Example usage
-// const newAccessToken = "new-access-token-value"; // Replace this with the new token you get from the API
-// updateEnvFile("ACCESS_TOKEN", newAccessToken);

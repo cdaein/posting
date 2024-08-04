@@ -1,5 +1,4 @@
 import axios from "axios";
-import { deleteObject } from "firebase/storage";
 import kleur from "kleur";
 import path from "node:path";
 import {
