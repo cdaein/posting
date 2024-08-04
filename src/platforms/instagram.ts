@@ -1,9 +1,5 @@
 import axios from "axios";
-import {
-  deleteObject,
-  FirebaseStorage,
-  StorageReference,
-} from "firebase/storage";
+import { deleteObject } from "firebase/storage";
 import kleur from "kleur";
 import path from "node:path";
 import {
@@ -11,8 +7,8 @@ import {
   INSTAGRAM_IMAGE_FORMATS,
   INSTAGRAM_VIDEO_FORMATS,
 } from "../constants";
-import { uploadFirebase } from "../storages/firebase";
-import { Config, EnvVars, PostSettings } from "../types";
+import { FirebaseFileInfo } from "../storages/firebase";
+import { EnvVars, PostSettings } from "../types";
 
 export type InstagramMediaType = "REELS" | "VIDEO" | "CAROUSEL";
 
@@ -40,11 +36,8 @@ const { bold, green, yellow } = kleur;
 // https://developers.facebook.com/docs/instagram/platform/instagram-api/content-publishing
 export async function uploadInstagram(
   envVars: EnvVars,
-  folderPath: string,
   settings: PostSettings,
-  userConfig: Config,
-  storage: FirebaseStorage,
-  firebaseUid: string,
+  firebaseFileInfos: FirebaseFileInfo[],
   dev: boolean,
 ) {
   const USER_ID = envVars.instagramUserId;
@@ -52,13 +45,11 @@ export async function uploadInstagram(
 
   const { postType, bodyText, fileInfos } = settings;
 
-  const storageRefs: StorageReference[] = [];
-  const downloadUrls: string[] = [];
-
   if (dev) {
     return "DEV MODE INSTAGRAM";
   }
 
+  // REVIEW: should be automatically detected and handled
   if (postType === "text") {
     console.log(`Instagram does not support text-only post. Skipping..`);
     return;
@@ -69,24 +60,14 @@ export async function uploadInstagram(
   if (fileInfos.length === 1) {
     // 1. single media post
     const { filename, altText } = fileInfos[0];
-    console.log("Uploading media file to Firebase Storage..");
-    const localFilePath = path.join(folderPath, filename);
-    const { storageRef, downloadUrl } = await uploadFirebase(
-      storage,
-      firebaseUid,
-      localFilePath,
-    );
-    storageRefs.push(storageRef);
-    downloadUrls.push(downloadUrl);
-    console.log(`File uploaded ${yellow(filename)}`);
-
     console.log(`Creating a media container for ${yellow(filename)}`);
     const ext = path.extname(filename).toLowerCase();
     const mediaContainerID = await createMediaContainer(USER_ID, {
       ...(INSTAGRAM_VIDEO_FORMATS.includes(ext) ? { media_type: "REELS" } : {}),
+      // ...(INSTAGRAM_VIDEO_FORMATS.includes(ext) ? { media_type: "VIDEO" } : {}),
       // NOTE: IG API doc says, REELS should have video_url, but got an error with missing image_url
       // terrible, terrible API to use..
-      image_url: downloadUrls[0],
+      image_url: firebaseFileInfos[0].downloadUrl,
       // ...(INSTAGRAM_IMAGE_FORMATS.includes(ext)
       //   ? { image_url: downloadUrls[0] }
       //   : INSTAGRAM_VIDEO_FORMATS.includes(ext)
@@ -107,18 +88,7 @@ export async function uploadInstagram(
     // for (let i = 0; i < filenames.length; i++) {
     for (let i = 0; i < fileInfos.length; i++) {
       const { filename, altText } = fileInfos[i];
-      // 2.a. upload
-      const localFilePath = path.join(folderPath, filename);
-      const { storageRef, downloadUrl } = await uploadFirebase(
-        storage,
-        firebaseUid,
-        localFilePath,
-      );
-      storageRefs.push(storageRef);
-      downloadUrls.push(downloadUrl);
-      console.log(`File uploaded ${yellow(filename)}`);
-
-      // 2.b. create item container IDs
+      // 2.a. create item container IDs
       console.log(`Creating a media container for ${yellow(filename)}`);
       const ext = path.extname(filename).toLowerCase();
       const mediaContainerID = await createMediaContainer(USER_ID, {
@@ -128,8 +98,8 @@ export async function uploadInstagram(
           : {}),
         // image_url: downloadUrls[i],
         ...(INSTAGRAM_IMAGE_FORMATS.includes(ext)
-          ? { image_url: downloadUrls[i] }
-          : { video_url: downloadUrls[i] }),
+          ? { image_url: firebaseFileInfos[i].downloadUrl }
+          : { video_url: firebaseFileInfos[i].downloadUrl }),
         caption: bodyText,
         access_token: ACCESS_TOKEN,
       });
@@ -173,7 +143,8 @@ export async function uploadInstagram(
     })
     .then(async (res) => {
       // delete file from firebase storage
-      for (const storageRef of storageRefs) {
+      for (const firebaseFileInfo of firebaseFileInfos) {
+        const { storageRef } = firebaseFileInfo;
         await deleteObject(storageRef);
       }
       console.log("Deleted media file(s) from Firebase Storage");
@@ -206,6 +177,8 @@ async function checkContainerStatus(
           access_token,
         },
       });
+      // FIX:
+      console.log(response.data); //TEST:
 
       const { status, error_message } = response.data;
       console.log(`Container status: ${status} (try ${retries + 1})`);
@@ -223,6 +196,7 @@ async function checkContainerStatus(
         await new Promise((resolve) => setTimeout(resolve, interval));
       }
     } catch (e) {
+      console.log(e);
       throw new Error(`Error checking container status: \n${e}`);
     }
   }
@@ -237,7 +211,6 @@ async function createMediaContainer(
 ) {
   return await axios
     .post(`${INSTAGRAM_API_URL}/${userId}/media`, null, { params: mediaData })
-    // .post(`${FACEBOOK_API_URL}/media`, null, { params: mediaData })
     .then((res) => {
       // return media container ID
       return res.data.id;

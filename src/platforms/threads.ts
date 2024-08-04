@@ -1,15 +1,11 @@
 import axios from "axios";
-import {
-  deleteObject,
-  FirebaseStorage,
-  StorageReference,
-} from "firebase/storage";
-import path from "node:path";
-import { THREADS_API_URL, THREADS_IMAGE_FORMATS } from "../constants";
-import { uploadFirebase } from "../storages/firebase";
-import { Config, EnvVars, PostSettings } from "../types";
+import { deleteObject } from "firebase/storage";
 import kleur from "kleur";
+import path from "node:path";
 import { ThreadsClient } from "../clients/threads-client";
+import { THREADS_API_URL, THREADS_IMAGE_FORMATS } from "../constants";
+import { FirebaseFileInfo } from "../storages/firebase";
+import { PostSettings } from "../types";
 
 export type ThreadsMediaType = "TEXT" | "IMAGE" | "VIDEO" | "CAROUSEL";
 
@@ -33,31 +29,21 @@ export type ThreadsPublishData = {
 
 const { bold, green, yellow } = kleur;
 
-// TODO: separate Firebase logic out of uploadThreads as I may change provider later?
-// - also to avoid uploading twice for threads AND instagram.
-// - instead, take publicURL as argument that is generated outside the function
-
 /**
  * First upload image to Firebase to get public URL. Then, publish to Threads.
- * @param folderPath -
+ * @param client -
  * @param settings -
- * @param firebaseUid -
- * @param storage -
+ * @param firebaseFileInfos -
  * @param dev -
  * @returns
  */
 export async function uploadThreads(
   client: ThreadsClient,
-  folderPath: string,
   settings: PostSettings,
-  storage: FirebaseStorage,
-  firebaseUid: string,
+  firebaseFileInfos: FirebaseFileInfo[],
   dev: boolean,
 ) {
   const { postType, bodyText, fileInfos } = settings;
-
-  const storageRefs: StorageReference[] = [];
-  const downloadUrls: string[] = [];
 
   if (dev) {
     return "DEV MODE THREADS";
@@ -72,50 +58,36 @@ export async function uploadThreads(
     await checkContainerStatus(client, containerId);
   } else {
     if (fileInfos.length === 1) {
+      // NOTE: Threads *has* alt text, but it's not documented on API
       const { filename, altText } = fileInfos[0];
       // 2. single media post
-      console.log("Uploading media file to Firebase Storage..");
-      const localFilePath = path.join(folderPath, filename);
-      const { storageRef, downloadUrl } = await uploadFirebase(
-        storage,
-        firebaseUid,
-        localFilePath,
-      );
-      storageRefs.push(storageRef);
-      downloadUrls.push(downloadUrl);
-      console.log(`File uploaded ${yellow(filename)}`);
-
       console.log(`Creating a media container for ${yellow(filename)}`);
       const ext = path.extname(filename);
       const containerId = THREADS_IMAGE_FORMATS.includes(ext)
-        ? await client.createImageContainer(downloadUrls[0])
-        : await client.createVideoContainer(downloadUrls[0]);
+        ? await client.createImageContainer(firebaseFileInfos[0].downloadUrl)
+        : await client.createVideoContainer(firebaseFileInfos[0].downloadUrl);
       console.log(`Media container created. id: ${green(containerId)}`);
       publishContainerId = containerId;
       await checkContainerStatus(client, containerId);
     } else {
       // 3. carousel post
       const mediaContainerIds: string[] = [];
-      console.log("Uploading media files to Firebase Storage..");
       for (let i = 0; i < fileInfos.length; i++) {
         const { filename, altText } = fileInfos[i];
-        // 3.a. upload
-        const localFilePath = path.join(folderPath, filename);
-        const { storageRef, downloadUrl } = await uploadFirebase(
-          storage,
-          firebaseUid,
-          localFilePath,
-        );
-        storageRefs.push(storageRef);
-        downloadUrls.push(downloadUrl);
-        console.log(`File uploaded ${yellow(filename)}`);
-
-        // 3.b. create item container IDs
+        // 3.a. create item container IDs
         console.log(`Creating a media container for ${yellow(filename)}`);
         const ext = path.extname(filename);
         const mediaContainerId = THREADS_IMAGE_FORMATS.includes(ext)
-          ? await client.createImageContainer(downloadUrls[0], "", true)
-          : await client.createVideoContainer(downloadUrls[0], "", true);
+          ? await client.createImageContainer(
+              firebaseFileInfos[0].downloadUrl,
+              "",
+              true,
+            )
+          : await client.createVideoContainer(
+              firebaseFileInfos[0].downloadUrl,
+              "",
+              true,
+            );
         mediaContainerIds.push(mediaContainerId);
         console.log(`Media container created. id: ${green(mediaContainerId)}`);
       }
@@ -153,7 +125,8 @@ export async function uploadThreads(
     .then(async (res) => {
       console.log(`Published on ${bold("Threads")}. id: ${green(statusId)}`);
       // delete files from firebase storage
-      for (const storageRef of storageRefs) {
+      for (const firebaseFileInfo of firebaseFileInfos) {
+        const { storageRef } = firebaseFileInfo;
         await deleteObject(storageRef);
         console.log("Deleted temporary media file from Firebase Storage");
       }
@@ -199,23 +172,6 @@ async function checkContainerStatus(
   }
 
   throw new Error(`Max retries reached. Media is not ready to publish.`);
-}
-
-// upload image and get media container ID
-async function createMediaContainer(
-  userId: string,
-  mediaData: ThreadsMediaData,
-) {
-  return await axios
-    .post(`${THREADS_API_URL}/${userId}/threads`, null, { params: mediaData })
-    .then((res) => {
-      // return media container ID
-      return res.data.id;
-    })
-    .catch((e) => {
-      console.error(e.response?.data);
-      throw new Error(`Error creating media container on Threads \n${e}`);
-    });
 }
 
 // https://developers.facebook.com/docs/threads/insights

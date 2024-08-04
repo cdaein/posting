@@ -5,13 +5,27 @@ import {
   getDownloadURL,
   getStorage,
   ref,
+  StorageReference,
   uploadBytes,
 } from "firebase/storage";
 import fs from "node:fs";
 import path from "node:path";
 import { Config, EnvVars } from "../types";
 
-export async function initFirebase(envVars: EnvVars, userConfig: Config) {
+export type FirebaseStorageInfo = {
+  storage: FirebaseStorage;
+  uid: string;
+};
+
+export type FirebaseFileInfo = {
+  storageRef: StorageReference;
+  downloadUrl: string;
+};
+
+export async function initFirebase(
+  envVars: EnvVars,
+  userConfig: Config,
+): Promise<FirebaseStorageInfo> {
   // initializeApp({
   //   apiKey: "AIza....",                             // Auth / General Use
   //   authDomain: "YOUR_APP.firebaseapp.com",         // Auth with popup/redirect
@@ -26,17 +40,21 @@ export async function initFirebase(envVars: EnvVars, userConfig: Config) {
   const storage = getStorage(app);
   const auth = getAuth(app);
 
-  try {
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      envVars.firebaseEmail,
-      envVars.firebasePassword,
-    );
-    const firebaseUid = userCredential.user.uid;
-    return { storage, firebaseUid };
-  } catch (e) {
-    throw new Error(`Failed sign in with Firebase \n${e}`);
-  }
+  return signInWithEmailAndPassword(
+    auth,
+    envVars.firebaseEmail,
+    envVars.firebasePassword,
+  )
+    .then((res) => {
+      const uid = res.user.uid;
+      return {
+        storage,
+        uid,
+      };
+    })
+    .catch(() => {
+      throw new Error(`Failed sign in with Firebase`);
+    });
 }
 
 /**
@@ -50,7 +68,7 @@ export async function uploadFirebase(
   storage: FirebaseStorage,
   uid: string,
   filePath: string,
-) {
+): Promise<FirebaseFileInfo> {
   const fileContent = fs.readFileSync(filePath);
   const parentFolderPath = path.basename(path.dirname(filePath));
   const storageRef = ref(

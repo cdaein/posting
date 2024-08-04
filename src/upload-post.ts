@@ -1,15 +1,20 @@
 import { BskyAgent } from "@atproto/api";
-import { FirebaseStorage } from "firebase/storage";
+import { StorageReference } from "firebase/storage";
 import kleur from "kleur";
 import { mastodon } from "masto";
 import fs from "node:fs";
 import path from "path";
 import { TwitterApiReadWrite } from "twitter-api-v2";
+import { ThreadsClient } from "./clients/threads-client";
 import {
   BLUESKY_IMAGE_FORMATS,
   BLUESKY_MAX_ATTACHMENTS,
   BLUESKY_MAX_CHARS,
   BLUESKY_VIDEO_FORMATS,
+  INSTAGRAM_IMAGE_FORMATS,
+  INSTAGRAM_MAX_ATTACHMENTS,
+  INSTAGRAM_MAX_CHARS,
+  INSTAGRAM_VIDEO_FORMATS,
   MASTODON_IMAGE_FORMATS,
   MASTODON_MAX_ATTACHMENTS,
   MASTODON_MAX_CHARS,
@@ -30,12 +35,11 @@ import { uploadInstagram } from "./platforms/instagram";
 import { uploadMastodon } from "./platforms/mastodon";
 import { uploadThreads } from "./platforms/threads";
 import { uploadTwitter } from "./platforms/twitter";
-import { initFirebase } from "./storages/firebase";
+import { initFirebase, uploadFirebase } from "./storages/firebase";
 import { Config, EnvVars, Platform, PostSettings } from "./types";
 import { waitForFile } from "./utils";
-import { ThreadsClient } from "./clients/threads-client";
 
-const { bold } = kleur;
+const { bold, yellow } = kleur;
 
 export async function isPostValid(
   postFolderPath: string,
@@ -66,7 +70,7 @@ export async function readSettings(postFolderPath: string) {
 
 /**
  * @param envVars -
- * @param client -
+ * @param clients -
  * @param postFolderPath - Folder where post is in (image, video, settings.json)
  * @param userConfig -
  * @param dev - A flag to enable dev mode
@@ -107,64 +111,56 @@ export async function uploadPost(
     }
     console.log("===============");
 
-    // Threads/Instagram requires public URL so set up Firebase here.
-    // REVIEW: maybe, create public URLs here and pass it to uploadThreads/Instagram
-    let storage: FirebaseStorage | undefined;
-    let firebaseUid: string = "";
+    const { blueskyAgent, mastodonClient, threadsClient, twitterClient } =
+      clients;
+
+    // Threads/Instagram both require public URL so set up Firebase here.
+    // FIX: uploaded files are deleted in both IG/Threads funcs. If both run, threads won't have files to use.
+    // - move delete objects in this function after all uploads finish.
+    const firebaseFileInfos: {
+      storageRef: StorageReference;
+      downloadUrl: string;
+    }[] = [];
+    // if something goes wrong with firebase uploads, do not proceed with IG/Threads
+    let firebaseReady = false;
     if (platforms.includes("threads") || platforms.includes("instagram")) {
-      const fb = await initFirebase(envVars, userConfig);
-      storage = fb.storage;
-      firebaseUid = fb.firebaseUid;
+      try {
+        const { storage, uid } = await initFirebase(envVars, userConfig);
+        const { fileInfos } = settings;
+        console.log("Uploading media file(s) to Firebase Storage..");
+        for (let i = 0; i < fileInfos.length; i++) {
+          const { filename } = fileInfos[i];
+          const localFilePath = path.join(postFolderPath, filename);
+          const { storageRef, downloadUrl } = await uploadFirebase(
+            storage,
+            uid,
+            localFilePath,
+          );
+          firebaseFileInfos.push({ storageRef, downloadUrl });
+          console.log(`File uploaded to Firebase: ${yellow(filename)}`);
+        }
+
+        firebaseReady = true;
+      } catch (e) {
+        console.error(e);
+      }
     }
 
     for (const platform of platforms) {
       if (platform === "bluesky") {
         console.log(`\t${bold("Bluesky")}`);
-        await uploadBluesky(
-          clients.blueskyAgent!,
-          postFolderPath,
-          settings,
-          dev,
-        );
-      } else if (platform === "instagram") {
-        await uploadInstagram(
-          envVars,
-          postFolderPath,
-          settings,
-          userConfig,
-          storage!,
-          firebaseUid,
-          dev,
-        );
+        await uploadBluesky(blueskyAgent!, postFolderPath, settings, dev);
+      } else if (platform === "instagram" && firebaseReady) {
+        // await uploadInstagram(envVars, settings, firebaseFileInfos, dev);
       } else if (platform === "mastodon") {
         console.log(`\t${bold("Mastodon")}`);
-        await uploadMastodon(
-          clients.mastodonClient!,
-          postFolderPath,
-          settings,
-          dev,
-        );
-      } else if (platform === "threads") {
+        await uploadMastodon(mastodonClient!, postFolderPath, settings, dev);
+      } else if (platform === "threads" && firebaseReady) {
         console.log(`\t${bold("Threads")}`);
-        // TODO: if posting to threads AND instagram, no need to upload same file twice.
-        // refactor necessary. maybe, upload files here, and just pass the URLs.
-        await uploadThreads(
-          envVars,
-          clients.threadsClient!,
-          postFolderPath,
-          settings,
-          storage!,
-          firebaseUid,
-          dev,
-        );
+        await uploadThreads(threadsClient!, settings, firebaseFileInfos, dev);
       } else if (platform === "twitter") {
         console.log(`\t${bold("Twitter")}`);
-        await uploadTwitter(
-          clients.twitterClient!,
-          postFolderPath,
-          settings,
-          dev,
-        );
+        await uploadTwitter(twitterClient!, postFolderPath, settings, dev);
       }
     }
     return true;
@@ -190,6 +186,8 @@ export function getMaxChars(platforms: Platform[]) {
     ...platforms.map((platform) => {
       if (platform === "bluesky") {
         return BLUESKY_MAX_CHARS;
+      } else if (platform === "instagram") {
+        return INSTAGRAM_MAX_CHARS;
       } else if (platform === "mastodon") {
         return MASTODON_MAX_CHARS;
       } else if (platform === "threads") {
@@ -224,6 +222,8 @@ export function getCommonImageFormats(platforms: Platform[]) {
     ...platforms.map((platform) => {
       if (platform === "bluesky") {
         return BLUESKY_IMAGE_FORMATS;
+      } else if (platform === "instagram") {
+        return INSTAGRAM_IMAGE_FORMATS;
       } else if (platform === "mastodon") {
         return MASTODON_IMAGE_FORMATS;
       } else if (platform === "threads") {
@@ -241,6 +241,8 @@ export function getCommonVideoFormats(platforms: Platform[]) {
     ...platforms.map((platform) => {
       if (platform === "bluesky") {
         return BLUESKY_VIDEO_FORMATS;
+      } else if (platform === "instagram") {
+        return INSTAGRAM_VIDEO_FORMATS;
       } else if (platform === "mastodon") {
         return MASTODON_VIDEO_FORMATS;
       } else if (platform === "threads") {
@@ -266,7 +268,6 @@ export async function isFilesValid(
 ) {
   const { platforms, postType, fileInfos } = settings;
   if (postType === "media") {
-    // fileInfos.length > 0
     if (!fileInfos || fileInfos.length === 0) {
       console.error(`fileInfos are required for media post`);
       return false;
@@ -300,6 +301,7 @@ export function getMaxAttachments(platforms: Platform[]) {
   return Math.min(
     ...platforms.map((platform) => {
       if (platform === "bluesky") return BLUESKY_MAX_ATTACHMENTS;
+      else if (platform === "instagram") return INSTAGRAM_MAX_ATTACHMENTS;
       else if (platform === "mastodon") return MASTODON_MAX_ATTACHMENTS;
       else if (platform === "threads") return THREADS_MAX_ATTACHMENTS;
       else if (platform === "twitter") return TWITTER_MAX_ATTACHMENTS;

@@ -42,8 +42,10 @@ export const MASTODON_MAX_ATTACHMENTS = 4;
 // export const FACEBOOK_API_URL = `https://graph.facebook.com/v20.0`;
 
 // Instagram
+export const INSTAGRAM_MAX_CHARS = 2200;
 export const INSTAGRAM_API_URL = `https://graph.instagram.com/v20.0`;
-export const INSTAGRAM_IMAGE_FORMATS = ["jpeg", "jpg"];
+// TEST: is it really JPG only?
+export const INSTAGRAM_IMAGE_FORMATS = ["jpeg", "jpg", "png"];
 export const INSTAGRAM_VIDEO_FORMATS = ["mp4", "mov"];
 export const INSTAGRAM_MAX_ATTACHMENTS = 10;
 
