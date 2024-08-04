@@ -135,7 +135,7 @@ export const dateQuestionFn = (watchDir: string): PromptObject => {
     name: "postDate",
     message: "Post time",
     initial: new Date(
-      new Date().getTime() + userConfig.processInterval * 2 * 60 * 1000,
+      new Date().getTime() + userConfig.processInterval * 60 * 1000,
     ),
     mask: "YYYY.MMM.D ddd HH:mm",
     validate: (value: Date) => {
