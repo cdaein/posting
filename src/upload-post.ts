@@ -88,6 +88,11 @@ export async function uploadPost(
   userConfig: Config,
   dev: boolean,
 ) {
+  const firebaseFileInfos: {
+    storageRef: StorageReference;
+    downloadUrl: string;
+  }[] = [];
+
   try {
     const settings = await readSettings(postFolderPath);
 
@@ -115,11 +120,6 @@ export async function uploadPost(
       clients;
 
     // Threads/Instagram both require public URL so set up Firebase here.
-    // TODO: clean up storage even if upload fails
-    const firebaseFileInfos: {
-      storageRef: StorageReference;
-      downloadUrl: string;
-    }[] = [];
     // if something goes wrong with firebase uploads, do not proceed with IG/Threads
     let firebaseReady = false;
     if (platforms.includes("threads") || platforms.includes("instagram")) {
@@ -163,7 +163,7 @@ export async function uploadPost(
       }
     }
 
-    // clean up Firebase Storage after use
+    // clean up Firebase Storage after successful use
     for (const firebaseFileInfo of firebaseFileInfos) {
       const { storageRef } = firebaseFileInfo;
       await deleteObject(storageRef);
@@ -172,6 +172,12 @@ export async function uploadPost(
 
     return true;
   } catch (e) {
+    // clean up when something goes wrong with uploadPost
+    for (const firebaseFileInfo of firebaseFileInfos) {
+      const { storageRef } = firebaseFileInfo;
+      await deleteObject(storageRef);
+      console.log("Deleted temporary media file from Firebase Storage");
+    }
     throw new Error(`Error in uploadPost \n${e}`);
   }
 }
