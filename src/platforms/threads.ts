@@ -47,7 +47,6 @@ const { bold, green, yellow } = kleur;
  * @returns
  */
 export async function uploadThreads(
-  envVars: EnvVars,
   client: ThreadsClient,
   folderPath: string,
   settings: PostSettings,
@@ -55,9 +54,6 @@ export async function uploadThreads(
   firebaseUid: string,
   dev: boolean,
 ) {
-  const USER_ID = envVars.threadsUserId!;
-  const ACCESS_TOKEN = envVars.threadsAccessToken!;
-
   const { postType, bodyText, fileInfos } = settings;
 
   const storageRefs: StorageReference[] = [];
@@ -67,20 +63,13 @@ export async function uploadThreads(
     return "DEV MODE THREADS";
   }
 
-  let publishData: ThreadsPublishData;
-  let carouselContainerID = "";
+  let publishContainerId = "";
 
   if (postType === "text") {
     // 1. text only post
-    const mediaContainerID = await createMediaContainer(USER_ID, {
-      media_type: "TEXT",
-      text: bodyText,
-      access_token: ACCESS_TOKEN,
-    });
-    publishData = {
-      creation_id: mediaContainerID,
-      access_token: ACCESS_TOKEN,
-    };
+    const containerId = await client.createTextContainer(bodyText);
+    publishContainerId = containerId;
+    await checkContainerStatus(client, containerId);
   } else {
     if (fileInfos.length === 1) {
       const { filename, altText } = fileInfos[0];
@@ -98,24 +87,16 @@ export async function uploadThreads(
 
       console.log(`Creating a media container for ${yellow(filename)}`);
       const ext = path.extname(filename);
-      const mediaContainerID = await createMediaContainer(USER_ID, {
-        media_type: THREADS_IMAGE_FORMATS.includes(ext) ? "IMAGE" : "VIDEO",
-        ...(THREADS_IMAGE_FORMATS.includes(ext)
-          ? { image_url: downloadUrls[0] }
-          : { video_url: downloadUrls[0] }),
-        text: bodyText,
-        access_token: ACCESS_TOKEN,
-      });
-      console.log(`Media container created. id: ${green(mediaContainerID)}`);
-      publishData = {
-        creation_id: mediaContainerID,
-        access_token: ACCESS_TOKEN,
-      };
+      const containerId = THREADS_IMAGE_FORMATS.includes(ext)
+        ? await client.createImageContainer(downloadUrls[0])
+        : await client.createVideoContainer(downloadUrls[0]);
+      console.log(`Media container created. id: ${green(containerId)}`);
+      publishContainerId = containerId;
+      await checkContainerStatus(client, containerId);
     } else {
       // 3. carousel post
-      const mediaContainerIDs: string[] = [];
+      const mediaContainerIds: string[] = [];
       console.log("Uploading media files to Firebase Storage..");
-      // for (let i = 0; i < filenames.length; i++) {
       for (let i = 0; i < fileInfos.length; i++) {
         const { filename, altText } = fileInfos[i];
         // 3.a. upload
@@ -132,74 +113,65 @@ export async function uploadThreads(
         // 3.b. create item container IDs
         console.log(`Creating a media container for ${yellow(filename)}`);
         const ext = path.extname(filename);
-        const mediaContainerID = await createMediaContainer(USER_ID, {
-          is_carousel_item: true,
-          media_type: THREADS_IMAGE_FORMATS.includes(ext) ? "IMAGE" : "VIDEO",
-          ...(THREADS_IMAGE_FORMATS.includes(ext)
-            ? { image_url: downloadUrls[i] }
-            : { video_url: downloadUrls[i] }),
-          text: bodyText,
-          access_token: ACCESS_TOKEN,
-        });
-        mediaContainerIDs.push(mediaContainerID);
-        console.log(`Media container created. id: ${green(mediaContainerID)}`);
+        const mediaContainerId = THREADS_IMAGE_FORMATS.includes(ext)
+          ? await client.createImageContainer(downloadUrls[0], "", true)
+          : await client.createVideoContainer(downloadUrls[0], "", true);
+        mediaContainerIds.push(mediaContainerId);
+        console.log(`Media container created. id: ${green(mediaContainerId)}`);
       }
 
-      for (const containerId of mediaContainerIDs) {
+      // TODO: this is blocking - what if later items finish first?
+      // use while loop and run it until all returns "FINISHED",
+      // if any one of them returns "ERROR", throw error.
+      for (const containerId of mediaContainerIds) {
         await checkContainerStatus(client, containerId);
       }
 
       // 3.c. create carousel media container ID
       console.log(
-        `Creating a carousel container for ${green(mediaContainerIDs.join(","))}`,
+        `Creating a carousel container for ${green(mediaContainerIds.join(","))}`,
       );
-      carouselContainerID = await createMediaContainer(USER_ID, {
-        media_type: "CAROUSEL",
-        children: mediaContainerIDs.join(","),
-        text: bodyText,
-        access_token: ACCESS_TOKEN,
-      });
-      publishData = {
-        creation_id: carouselContainerID,
-        access_token: ACCESS_TOKEN,
-      };
+      const carouselContainerID = await client.createCarouselContainer(
+        mediaContainerIds,
+        bodyText,
+      );
+      publishContainerId = carouselContainerID;
+
+      // media container may not be immedidiately ready to publish. (ie. big files)
+      // per IG API: query a container's status once per minute, for no more than 5 minutes.
+      await checkContainerStatus(client, carouselContainerID);
+
       console.log(
         `Carousel container created. id: ${green(carouselContainerID)}`,
       );
     }
   }
 
-  // media container may not be immedidiately ready to publish. (ie. big files)
-  // per IG API: query a container's status once per minute, for no more than 5 minutes.
-  await checkContainerStatus(client, carouselContainerID);
-
   console.log(`Publishing on ${bold("Threads")}..`);
-  const status = await axios
-    .post(`${THREADS_API_URL}/${USER_ID}/threads_publish`, null, {
-      params: publishData,
-    })
+  const statusId = await client
+    .publish(publishContainerId)
     .then(async (res) => {
-      console.log(`Published on ${bold("Threads")}. id: ${green(status.id)}`);
+      console.log(`Published on ${bold("Threads")}. id: ${green(statusId)}`);
       // delete files from firebase storage
       for (const storageRef of storageRefs) {
         await deleteObject(storageRef);
         console.log("Deleted temporary media file from Firebase Storage");
       }
-      // res.data.id is mediaId
-      return res.data;
+      return res;
     })
     .catch((e) => {
       console.error(e.response?.data);
       throw new Error(`Error publishing on Threads \n${e}`);
     });
-  return status;
+
+  return statusId;
 }
 
 async function checkContainerStatus(
   client: ThreadsClient,
   creationId: string,
-  maxRetries = 5,
-  interval = 1000 * 60,
+  maxRetries = 10,
+  interval = 1000 * 30,
 ) {
   let retries = 0;
 
@@ -211,7 +183,7 @@ async function checkContainerStatus(
 
       if (status === "FINISHED") {
         console.log(`${green(creationId)} is ready to publish.`);
-        return;
+        return "FINISHED";
       } else if (status === "ERROR") {
         console.error(`Media container failed.`);
         throw new Error(error_message);
