@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Config, EnvVars, PostSettings } from "../types";
 
-type ImageRecord = {
+export type ImageRecord = {
   alt: string;
   image: BlobRef;
   aspectRatio?: {
@@ -14,7 +14,34 @@ type ImageRecord = {
   };
 };
 
+export type BlueskyStats = {
+  likeCount: number;
+  replyCount: number;
+  repostCount: number;
+};
+
+export type BlueskyPostResponse = {
+  record: {
+    text: string;
+  };
+  likeCount: number;
+  replyCount: number;
+  repostCount: number;
+};
+
 const { bold, green, yellow } = kleur;
+
+const lastStats: BlueskyStats = {
+  likeCount: 0,
+  replyCount: 0,
+  repostCount: 0,
+};
+
+const diffStats: BlueskyStats = {
+  likeCount: 0,
+  repostCount: 0,
+  replyCount: 0,
+};
 
 export async function initBlueskyAgent(envVars: EnvVars) {
   if (envVars.blueskyEmail && envVars.blueskyPassword) {
@@ -110,21 +137,29 @@ export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
       // URL I need - https://bsky.app/profile/[USER_HANDLE]/post/3kyobz
       const { uri } = authorFeed.data.feed[0].post;
       const res = await agent.getPostThread({ uri });
-      const { post } = res.data.thread;
-      // REVIEW: get the proper type
-      // @ts-ignore
-      const { likeCount, replyCount, repostCount } = post;
+      // REVIEW: is there a type from library?
+      const post = res.data.thread.post as BlueskyStats;
       // @ts-ignore
       const text = post.record.text as string;
       const postUrl = `https://bsky.app/profile/${userConfig.bluesky.handle}/post/${path.basename(uri)}`;
 
-      const likes = `Likes: ${green(likeCount)}`;
-      const reposts = `Reblogs: ${green(repostCount)}`;
-      const replies = `Replies: ${green(replyCount)}`;
+      const keys = Object.keys(post) as (keyof BlueskyStats)[];
+      for (const key of keys) {
+        diffStats[key] = post[key] - lastStats[key];
+      }
 
       console.log(`Latest ${bold("Bluesky")} (${green(postUrl)}) stats`);
       console.log(`Text: ${text}`);
+      const { likeCount, repostCount, replyCount } = diffStats;
+      const likes = `Likes: ${likeCount >= 0 && "+"}${green(likeCount!)}`;
+      const reposts = `Reblogs: ${repostCount >= 0 && "+"}${green(repostCount!)}`;
+      const replies = `Replies: ${replyCount >= 0 && "+"}green(replyCount!)}`;
       console.log(likes, reposts, replies);
+
+      // update last stat to current stat
+      for (const key of keys) {
+        lastStats[key] = post[key];
+      }
     } catch (e) {
       throw new Error(`Error requesting Bluesky feed/post.`);
     }
