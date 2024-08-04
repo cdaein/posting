@@ -124,12 +124,6 @@ export async function uploadThreads(
     .publish(publishContainerId)
     .then(async (res) => {
       console.log(`Published on ${bold("Threads")}. id: ${green(statusId)}`);
-      // delete files from firebase storage
-      for (const firebaseFileInfo of firebaseFileInfos) {
-        const { storageRef } = firebaseFileInfo;
-        await deleteObject(storageRef);
-        console.log("Deleted temporary media file from Firebase Storage");
-      }
       return res;
     })
     .catch((e) => {

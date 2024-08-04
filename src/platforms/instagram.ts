@@ -142,12 +142,6 @@ export async function uploadInstagram(
       params: publishData,
     })
     .then(async (res) => {
-      // delete file from firebase storage
-      for (const firebaseFileInfo of firebaseFileInfos) {
-        const { storageRef } = firebaseFileInfo;
-        await deleteObject(storageRef);
-      }
-      console.log("Deleted media file(s) from Firebase Storage");
       console.log(`Published on ${bold("Instagram")}`);
       // res.data.id is mediaId
       return res.data;

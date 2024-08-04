@@ -1,5 +1,5 @@
 import { BskyAgent } from "@atproto/api";
-import { StorageReference } from "firebase/storage";
+import { deleteObject, StorageReference } from "firebase/storage";
 import kleur from "kleur";
 import { mastodon } from "masto";
 import fs from "node:fs";
@@ -115,8 +115,6 @@ export async function uploadPost(
       clients;
 
     // Threads/Instagram both require public URL so set up Firebase here.
-    // FIX: uploaded files are deleted in both IG/Threads funcs. If both run, threads won't have files to use.
-    // - move delete objects in this function after all uploads finish.
     const firebaseFileInfos: {
       storageRef: StorageReference;
       downloadUrl: string;
@@ -136,6 +134,7 @@ export async function uploadPost(
             uid,
             localFilePath,
           );
+          console.log(`File uploaded: ${yellow(filename)}`);
           firebaseFileInfos.push({ storageRef, downloadUrl });
           console.log(`File uploaded to Firebase: ${yellow(filename)}`);
         }
@@ -151,7 +150,7 @@ export async function uploadPost(
         console.log(`\t${bold("Bluesky")}`);
         await uploadBluesky(blueskyAgent!, postFolderPath, settings, dev);
       } else if (platform === "instagram" && firebaseReady) {
-        // await uploadInstagram(envVars, settings, firebaseFileInfos, dev);
+        await uploadInstagram(envVars, settings, firebaseFileInfos, dev);
       } else if (platform === "mastodon") {
         console.log(`\t${bold("Mastodon")}`);
         await uploadMastodon(mastodonClient!, postFolderPath, settings, dev);
@@ -163,6 +162,14 @@ export async function uploadPost(
         await uploadTwitter(twitterClient!, postFolderPath, settings, dev);
       }
     }
+
+    // clean up Firebase Storage after use
+    for (const firebaseFileInfo of firebaseFileInfos) {
+      const { storageRef } = firebaseFileInfo;
+      await deleteObject(storageRef);
+      console.log("Deleted temporary media file from Firebase Storage");
+    }
+
     return true;
   } catch (e) {
     throw new Error(`Error in uploadPost \n${e}`);
