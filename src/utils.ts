@@ -24,6 +24,7 @@ export const versionUpPath = async (
   isDirectory = true,
 ) => {
   const newFolderPath = path.dirname(newPath);
+  // ext includes dot
   const ext = path.extname(newPath);
   const baseWithoutExt = isDirectory
     ? path.basename(newPath)

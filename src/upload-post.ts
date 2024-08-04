@@ -115,6 +115,7 @@ export async function uploadPost(
       clients;
 
     // Threads/Instagram both require public URL so set up Firebase here.
+    // TODO: clean up storage even if upload fails
     const firebaseFileInfos: {
       storageRef: StorageReference;
       downloadUrl: string;
@@ -134,7 +135,6 @@ export async function uploadPost(
             uid,
             localFilePath,
           );
-          console.log(`File uploaded: ${yellow(filename)}`);
           firebaseFileInfos.push({ storageRef, downloadUrl });
           console.log(`File uploaded to Firebase: ${yellow(filename)}`);
         }

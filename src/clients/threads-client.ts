@@ -1,6 +1,6 @@
 import axios from "axios";
 import { EnvVars } from "../types";
-import path from "node:path";
+import fs from "node:fs";
 
 export type ThreadsTokens = {
   appId: string;
@@ -25,7 +25,7 @@ export type ThreadsMediaData = {
   access_token: string;
 };
 
-export type ThreadsContainerStatus = "FINISHED" | "ERROR";
+export type ThreadsContainerStatus = "IN_PROGRESS" | "FINISHED" | "ERROR";
 
 export type ThreadsPublishData = {
   creation_id: string;
@@ -199,9 +199,11 @@ export class ThreadsClient {
    * @param creationId - Container ID string
    * @returns
    */
-  async checkContainerStatus(
-    creationId: string,
-  ): Promise<{ status: ThreadsContainerStatus; error_message: string }> {
+  async checkContainerStatus(creationId: string): Promise<{
+    status: ThreadsContainerStatus;
+    error_message: string;
+    id: string;
+  }> {
     return axios
       .get(`${this.THREADS_API_URL}/${creationId}`, {
         params: {
@@ -314,5 +316,38 @@ export class ThreadsClient {
           throw new Error(e);
         })
     );
+  }
+
+  // WARN: BELOW NOT TESTED YET!!!
+  // refreshToken("...", "THREADS_ACCESS_TOKEN")
+  async refreshToken(envFilePath: string, key: string) {
+    const envFileContent = fs.readFileSync(envFilePath, "utf8");
+
+    // 1. make request
+    // TODO: look at response
+    const response = await axios.get(
+      `https://graph.threads.net/refresh_access_token`,
+      {
+        params: {
+          grant_type: "th_refresh_token",
+          access_token: this.tokens.accessToken,
+        },
+      },
+    );
+
+    const newTokenValue = "";
+    const newEnvContent = envFileContent
+      .split("\n")
+      .map((line) => {
+        // If the line starts with the key, replace the value
+        if (line.startsWith(`${key}=`)) {
+          return `${key}=${newTokenValue}`;
+        }
+        return line;
+      })
+      .join("\n");
+
+    fs.writeFileSync(envFilePath, newEnvContent, "utf8");
+    console.log(`${key} has been updated in ${envFilePath}`);
   }
 }

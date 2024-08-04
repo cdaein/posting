@@ -4,6 +4,7 @@ import { ThreadsClient } from "../clients/threads-client";
 import { THREADS_IMAGE_FORMATS } from "../constants";
 import { FirebaseFileInfo } from "../storages/firebase";
 import { PostSettings } from "../types";
+import { waitForFile } from "../utils";
 
 export type ThreadsMediaType = "TEXT" | "IMAGE" | "VIDEO" | "CAROUSEL";
 
@@ -56,11 +57,11 @@ export async function uploadThreads(
     await checkContainerStatus(client, containerId);
   } else {
     if (fileInfos.length === 1) {
-      // NOTE: Threads *has* alt text, but it's not documented on API
+      // NOTE: Threads *has* alt text, but it's not documented on API..
       const { filename, altText } = fileInfos[0];
       // 2. single media post
       console.log(`Creating a media container for ${yellow(filename)}`);
-      const ext = path.extname(filename);
+      const ext = path.extname(filename).toLowerCase().slice(1);
       const containerId = THREADS_IMAGE_FORMATS.includes(ext)
         ? await client.createImageContainer(
             firebaseFileInfos[0].downloadUrl,
@@ -80,7 +81,7 @@ export async function uploadThreads(
         const { filename, altText } = fileInfos[i];
         // 3.a. create item container IDs
         console.log(`Creating a media container for ${yellow(filename)}`);
-        const ext = path.extname(filename);
+        const ext = path.extname(filename).toLowerCase().slice(1);
         const mediaContainerId = THREADS_IMAGE_FORMATS.includes(ext)
           ? await client.createImageContainer(
               firebaseFileInfos[0].downloadUrl,
@@ -126,12 +127,12 @@ export async function uploadThreads(
   console.log(`Publishing on ${bold("Threads")}..`);
   const statusId = await client
     .publish(publishContainerId)
-    .then(async (res) => {
-      console.log(`Published on ${bold("Threads")}. id: ${green(statusId)}`);
-      return res;
+    .then(async (id) => {
+      console.log(`Published on ${bold("Threads")}. id: ${green(id)}`);
+      return id;
     })
     .catch((e) => {
-      console.error(e.response?.data);
+      // console.error(e.response?.data);
       throw new Error(`Error publishing on Threads \n${e}`);
     });
 
@@ -146,9 +147,12 @@ async function checkContainerStatus(
 ) {
   let retries = 0;
 
+  // wait 5 sec before querying container status to reduce API calls.
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+
   while (retries < maxRetries) {
     try {
-      const { status, error_message } =
+      const { status, error_message, id } =
         await client.checkContainerStatus(creationId);
       console.log(`Container status: ${status} (try ${retries + 1})`);
 
@@ -156,7 +160,7 @@ async function checkContainerStatus(
         console.log(`${green(creationId)} is ready to publish.`);
         return "FINISHED";
       } else if (status === "ERROR") {
-        console.error(`Media container failed.`);
+        console.error(`Media container failed: ${error_message}`);
         throw new Error(error_message);
       }
 
@@ -164,8 +168,8 @@ async function checkContainerStatus(
       if (retries < maxRetries) {
         await new Promise((resolve) => setTimeout(resolve, interval));
       }
-    } catch (e) {
-      throw new Error(`Error checking container status: \n${e}`);
+    } catch (e: any) {
+      throw new Error(`Error checking container status: ${e}`);
     }
   }
 

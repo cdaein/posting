@@ -60,7 +60,7 @@ export async function uploadInstagram(
     // 1. single media post
     const { filename, altText } = fileInfos[0];
     console.log(`Creating a media container for ${yellow(filename)}`);
-    const ext = path.extname(filename).toLowerCase();
+    const ext = path.extname(filename).toLowerCase().slice(1);
     const mediaContainerID = await createMediaContainer(USER_ID, {
       ...(INSTAGRAM_VIDEO_FORMATS.includes(ext) ? { media_type: "REELS" } : {}),
       // ...(INSTAGRAM_VIDEO_FORMATS.includes(ext) ? { media_type: "VIDEO" } : {}),
@@ -89,7 +89,7 @@ export async function uploadInstagram(
       const { filename, altText } = fileInfos[i];
       // 2.a. create item container IDs
       console.log(`Creating a media container for ${yellow(filename)}`);
-      const ext = path.extname(filename).toLowerCase();
+      const ext = path.extname(filename).toLowerCase().slice(1);
       const mediaContainerID = await createMediaContainer(USER_ID, {
         is_carousel_item: true,
         ...(INSTAGRAM_VIDEO_FORMATS.includes(ext)

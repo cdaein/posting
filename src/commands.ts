@@ -269,7 +269,7 @@ export function initWatchCommand(
                 // if post folder is not moved, exit to prevent duplicate posting at next scan.
                 process.exit(1);
               }
-              console.error(`Error processing post folder: \n${e}`);
+              console.error(e);
               cb(e);
               // REVIEW: quit after error or not?
               // process.exit(1);
