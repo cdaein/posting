@@ -205,11 +205,13 @@ export class ThreadsClient {
     return axios
       .get(`${this.THREADS_API_URL}/${creationId}`, {
         params: {
-          fileds: "status,error_message",
+          fields: "status,error_message",
           access_token: this.tokens.accessToken,
         },
       })
-      .then((res) => res.data)
+      .then((res) => {
+        return res.data;
+      })
       .catch((e) => {
         throw new Error(e);
       });
