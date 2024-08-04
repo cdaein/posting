@@ -62,8 +62,14 @@ export async function uploadThreads(
       console.log(`Creating a media container for ${yellow(filename)}`);
       const ext = path.extname(filename);
       const containerId = THREADS_IMAGE_FORMATS.includes(ext)
-        ? await client.createImageContainer(firebaseFileInfos[0].downloadUrl)
-        : await client.createVideoContainer(firebaseFileInfos[0].downloadUrl);
+        ? await client.createImageContainer(
+            firebaseFileInfos[0].downloadUrl,
+            bodyText,
+          )
+        : await client.createVideoContainer(
+            firebaseFileInfos[0].downloadUrl,
+            bodyText,
+          );
       console.log(`Media container created. id: ${green(containerId)}`);
       publishContainerId = containerId;
       await checkContainerStatus(client, containerId);
