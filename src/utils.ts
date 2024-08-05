@@ -7,6 +7,13 @@ import kleur from "kleur";
 
 const { yellow } = kleur;
 
+/**
+ * It will make sure desired `data` is available and returned. Otherwise, it throws an error.
+ * @template T - could be any data type
+ * @param `[error, data]` - Takes in result from `handleAsync()`
+ * @param customMessage - error handling message
+ * @returns returns `data`
+ */
 export function ensureData<T>(
   [error, data]: [any, T | null],
   customMessage: string,

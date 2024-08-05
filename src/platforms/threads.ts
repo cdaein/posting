@@ -4,7 +4,7 @@ import { ThreadsClient, ThreadsUserData } from "../clients/threads-client";
 import { THREADS_IMAGE_FORMATS } from "../constants";
 import { FirebaseFileInfo } from "../storages/firebase";
 import { PostSettings } from "../types";
-import { ensureData, handleAsync, waitForFile } from "../utils";
+import { ensureData, handleAsync } from "../utils";
 
 export type ThreadsMediaType = "TEXT" | "IMAGE" | "VIDEO" | "CAROUSEL";
 
@@ -76,7 +76,11 @@ export async function uploadThreads(
 
   if (postType === "text") {
     // 1. text only post
-    const containerId = await client.createTextContainer(bodyText);
+    const result = await handleAsync(client.createTextContainer(bodyText));
+    const containerId = ensureData(
+      result,
+      "Error creating text container on Threads",
+    );
     publishContainerId = containerId;
     await checkContainerStatus(client, containerId);
   } else {
@@ -86,15 +90,21 @@ export async function uploadThreads(
       // 2. single media post
       console.log(`Creating a media container for ${yellow(filename)}`);
       const ext = path.extname(filename).toLowerCase().slice(1);
-      const containerId = THREADS_IMAGE_FORMATS.includes(ext)
-        ? await client.createImageContainer(
-            firebaseFileInfos[0].downloadUrl,
-            bodyText,
-          )
-        : await client.createVideoContainer(
-            firebaseFileInfos[0].downloadUrl,
-            bodyText,
-          );
+      const result = await handleAsync(
+        THREADS_IMAGE_FORMATS.includes(ext)
+          ? client.createImageContainer(
+              firebaseFileInfos[0].downloadUrl,
+              bodyText,
+            )
+          : client.createVideoContainer(
+              firebaseFileInfos[0].downloadUrl,
+              bodyText,
+            ),
+      );
+      const containerId = ensureData(
+        result,
+        "Error creating media container on Threads",
+      );
       console.log(`Media container created. id: ${green(containerId)}`);
       publishContainerId = containerId;
       await checkContainerStatus(client, containerId);
@@ -106,19 +116,25 @@ export async function uploadThreads(
         // 3.a. create item container IDs
         console.log(`Creating a media container for ${yellow(filename)}`);
         const ext = path.extname(filename).toLowerCase().slice(1);
-        const mediaContainerId = THREADS_IMAGE_FORMATS.includes(ext)
-          ? await client.createImageContainer(
-              firebaseFileInfos[0].downloadUrl,
-              "",
-              true,
-            )
-          : await client.createVideoContainer(
-              firebaseFileInfos[0].downloadUrl,
-              "",
-              true,
-            );
-        mediaContainerIds.push(mediaContainerId);
-        console.log(`Media container created. id: ${green(mediaContainerId)}`);
+        const result = await handleAsync(
+          THREADS_IMAGE_FORMATS.includes(ext)
+            ? client.createImageContainer(
+                firebaseFileInfos[0].downloadUrl,
+                "",
+                true,
+              )
+            : client.createVideoContainer(
+                firebaseFileInfos[0].downloadUrl,
+                "",
+                true,
+              ),
+        );
+        const containerId = ensureData(
+          result,
+          "Error creating carousel item on Threads",
+        );
+        mediaContainerIds.push(containerId);
+        console.log(`Media container created. id: ${green(containerId)}`);
       }
 
       // TODO: this is blocking - what if later items finish first?
@@ -132,9 +148,12 @@ export async function uploadThreads(
       console.log(
         `Creating a carousel container for ${green(mediaContainerIds.join(","))}`,
       );
-      const carouselContainerID = await client.createCarouselContainer(
-        mediaContainerIds,
-        bodyText,
+      const result = await handleAsync(
+        client.createCarouselContainer(mediaContainerIds, bodyText),
+      );
+      const carouselContainerID = ensureData(
+        result,
+        "Error creating carousel container on Threads",
       );
       publishContainerId = carouselContainerID;
 
