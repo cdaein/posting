@@ -26,6 +26,30 @@ export type ThreadsPublishData = {
   access_token: string;
 };
 
+export type ThreadsStats = {
+  views: number;
+  likes: number;
+  replies: number;
+  reposts: number;
+  quotes: number;
+};
+
+const lastStats: Record<keyof ThreadsStats, number | undefined> = {
+  views: undefined,
+  likes: undefined,
+  replies: undefined,
+  reposts: undefined,
+  quotes: undefined,
+};
+
+const diffStats: ThreadsStats = {
+  views: 0,
+  likes: 0,
+  replies: 0,
+  reposts: 0,
+  quotes: 0,
+};
+
 const { bold, green, yellow } = kleur;
 
 /**
@@ -181,17 +205,36 @@ export async function getThreadsStats(client: ThreadsClient) {
   const { id: mediaId, text, permalink } = (await client.getUserData(1))[0];
 
   try {
-    const { likes, replies, reposts, quotes } =
-      await client.getPostInsights(mediaId);
+    const curStats: ThreadsStats = await client.getPostInsights(mediaId);
 
-    // const viewsStr = `Views: ${green(views)}`;
-    const likesStr = `Likes: ${green(likes)}`;
-    const repliesStr = `Replies: ${green(replies)}`;
-    const repostsStr = `Reposts: ${green(reposts)}`;
-    const quotesStr = `Quotes: ${green(quotes)}`;
+    const keys = Object.keys(diffStats) as (keyof ThreadsStats)[];
+    for (const key of keys) {
+      if (lastStats[key]) {
+        diffStats[key] = curStats[key] - lastStats[key];
+      } else {
+        diffStats[key] = curStats[key];
+      }
+    }
+
+    const { likes, replies, reposts, quotes } = diffStats;
+
+    const getDiffStat = (prev: number | undefined, diff: number) => {
+      return (prev && diff >= 0 ? "+" : "") + diff.toString();
+    };
+
     console.log(`Latest ${bold("Threads")} (${green(permalink)}) stats`);
     console.log(`Text: ${text}`);
+    // const viewsStr = `Views: ${green(views)}`;
+    const likesStr = `Likes: ${green(getDiffStat(lastStats.likes, likes))}`;
+    const repliesStr = `Replies: ${green(getDiffStat(lastStats.replies, replies))}`;
+    const repostsStr = `Reposts: ${green(getDiffStat(lastStats.reposts, reposts))}`;
+    const quotesStr = `Quotes: ${green(getDiffStat(lastStats.quotes, quotes))}`;
     console.log(likesStr, repliesStr, repostsStr, quotesStr);
+
+    // update last stat to current stat
+    for (const key of keys) {
+      lastStats[key] = curStats[key];
+    }
   } catch (e: any) {
     console.error(e.response?.data);
     throw new Error(`Error retrieving post data on Threads \n${e}`);

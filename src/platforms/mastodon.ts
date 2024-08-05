@@ -9,6 +9,24 @@ interface MediaAttachment {
   id: string;
 }
 
+export type MastodonStats = {
+  faves: number;
+  reblogs: number;
+  replies: number;
+};
+
+const lastStats: Record<keyof MastodonStats, number | undefined> = {
+  faves: undefined,
+  reblogs: undefined,
+  replies: undefined,
+};
+
+const diffStats: MastodonStats = {
+  faves: 0,
+  reblogs: 0,
+  replies: 0,
+};
+
 const { bold, green, yellow } = kleur;
 
 export function initMastodonClient(envVars: EnvVars, userConfig: Config) {
@@ -84,13 +102,38 @@ export async function getMastodonStats(client: mastodon.rest.Client) {
     const { id, content, url, favouritesCount, reblogsCount, repliesCount } =
       statuses[0];
 
-    const faves = `Favorites: ${green(favouritesCount)}`;
-    const reblogs = `Reblogs: ${green(reblogsCount)}`;
-    const replies = `Replies: ${green(repliesCount)}`;
+    const curStats: MastodonStats = {
+      faves: favouritesCount,
+      reblogs: reblogsCount,
+      replies: repliesCount,
+    };
+
+    const keys = Object.keys(diffStats) as (keyof MastodonStats)[];
+    for (const key of keys) {
+      if (lastStats[key]) {
+        diffStats[key] = curStats[key] - lastStats[key];
+      } else {
+        diffStats[key] = curStats[key];
+      }
+    }
+
+    const { faves, reblogs, replies } = diffStats;
+
+    const getDiffStat = (prev: number | undefined, diff: number) => {
+      return (prev && diff >= 0 ? "+" : "") + diff.toString();
+    };
 
     console.log(`Latest ${bold("Mastodon")} (${green(url!)}) stats`);
     console.log(`Text: ${content}`);
-    console.log(faves, reblogs, replies);
+    const favesStr = `Faves: ${green(getDiffStat(lastStats.faves, faves))}`;
+    const reblogsStr = `Reblogs: ${green(getDiffStat(lastStats.reblogs, reblogs))}`;
+    const repliesStr = `Replies: ${green(getDiffStat(lastStats.replies, replies))}`;
+    console.log(favesStr, reblogsStr, repliesStr);
+
+    // update last stat to current stat
+    for (const key of keys) {
+      lastStats[key] = curStats[key];
+    }
   } catch (e) {
     throw new Error(`Error requesting Mastodon credentials/statuses.`);
   }
