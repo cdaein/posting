@@ -31,10 +31,10 @@ export type BlueskyPostResponse = {
 
 const { bold, green, yellow } = kleur;
 
-const lastStats: BlueskyStats = {
-  likeCount: 0,
-  replyCount: 0,
-  repostCount: 0,
+const lastStats: Record<keyof BlueskyStats, number | undefined> = {
+  likeCount: undefined,
+  replyCount: undefined,
+  repostCount: undefined,
 };
 
 const diffStats: BlueskyStats = {
@@ -143,17 +143,35 @@ export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
       const text = post.record.text as string;
       const postUrl = `https://bsky.app/profile/${userConfig.bluesky.handle}/post/${path.basename(uri)}`;
 
-      const keys = Object.keys(post) as (keyof BlueskyStats)[];
+      const curStats: BlueskyStats = {
+        likeCount: post.likeCount,
+        repostCount: post.repostCount,
+        replyCount: post.replyCount,
+      };
+
+      const keys = Object.keys(diffStats) as (keyof BlueskyStats)[];
       for (const key of keys) {
-        diffStats[key] = post[key] - lastStats[key];
+        if (lastStats[key]) {
+          diffStats[key] = curStats[key] - lastStats[key];
+        } else {
+          diffStats[key] = curStats[key];
+        }
       }
+
+      const { likeCount, repostCount, replyCount } = diffStats;
+
+      const getDiffStat = (prev: number | undefined, diff: number) => {
+        return (prev && diff >= 0 ? "+" : "") + diff.toString();
+      };
 
       console.log(`Latest ${bold("Bluesky")} (${green(postUrl)}) stats`);
       console.log(`Text: ${text}`);
-      const { likeCount, repostCount, replyCount } = diffStats;
-      const likes = `Likes: ${likeCount >= 0 && "+"}${green(likeCount!)}`;
-      const reposts = `Reblogs: ${repostCount >= 0 && "+"}${green(repostCount!)}`;
-      const replies = `Replies: ${replyCount >= 0 && "+"}green(replyCount!)}`;
+      // const likes = `Likes: ${green(lastStats.likeCount !== 0 && likeCount >= 0 ? "+" : "" + likeCount.toString())}`;
+      // const reposts = `Reblogs: ${green(lastStats.repostCount !== 0 && repostCount >= 0 ? "+" : "" + repostCount.toString())}`;
+      // const replies = `Replies: ${green(lastStats.replyCount !== 0 && replyCount >= 0 ? "+" : "" + replyCount.toString())}`;
+      const likes = `Likes: ${green(getDiffStat(lastStats.likeCount, likeCount))}`;
+      const reposts = `Reblogs: ${green(getDiffStat(lastStats.repostCount, repostCount))}`;
+      const replies = `Replies: ${green(getDiffStat(lastStats.replyCount, replyCount))}`;
       console.log(likes, reposts, replies);
 
       // update last stat to current stat
