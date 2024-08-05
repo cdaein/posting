@@ -181,9 +181,9 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
       }
     }
 
-    // if stat never changed (always 0), it doesn't display "+".
+    // REVIEW: if stat never changed (always 0), it doesn't display "+".
     const getDiffStat = (prev: number | undefined, diff: number) => {
-      return (prev && diff >= 0 ? "+" : "") + diff.toString();
+      return (prev !== undefined && diff >= 0 ? "+" : "") + diff.toString();
     };
 
     const { likes, retweets, replies, quotes, bookmarks } = diffStats;

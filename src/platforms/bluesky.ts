@@ -161,7 +161,7 @@ export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
       const { likeCount, repostCount, replyCount } = diffStats;
 
       const getDiffStat = (prev: number | undefined, diff: number) => {
-        return (prev && diff >= 0 ? "+" : "") + diff.toString();
+        return (prev !== undefined && diff >= 0 ? "+" : "") + diff.toString();
       };
 
       console.log(`Latest ${bold("Bluesky")} (${green(postUrl)}) stats`);

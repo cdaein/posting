@@ -120,7 +120,7 @@ export async function getMastodonStats(client: mastodon.rest.Client) {
     const { faves, reblogs, replies } = diffStats;
 
     const getDiffStat = (prev: number | undefined, diff: number) => {
-      return (prev && diff >= 0 ? "+" : "") + diff.toString();
+      return (prev !== undefined && diff >= 0 ? "+" : "") + diff.toString();
     };
 
     console.log(`Latest ${bold("Mastodon")} (${green(url!)}) stats`);
