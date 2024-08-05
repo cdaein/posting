@@ -7,6 +7,33 @@ import kleur from "kleur";
 
 const { yellow } = kleur;
 
+export function ensureData<T>(
+  [error, data]: [any, T | null],
+  customMessage: string,
+): T {
+  if (error) {
+    throw new Error(`${customMessage}: ${error.message || error}`);
+  }
+  return data as T;
+}
+
+/**
+ *
+ * @template T - any data type to return
+ * @param promise - any function that will return a promise
+ * @returns `[error, data]` each could be `null` while the other returns some value
+ */
+export async function handleAsync<T>(
+  promise: Promise<T>,
+): Promise<[any, T | null]> {
+  try {
+    const data = await promise;
+    return [null, data];
+  } catch (error) {
+    return [error, null];
+  }
+}
+
 /**
  * Rename and move path.  If already exists, add number suffix at the end.
  * If `how === rename`, original will be moved. use `copy` to keep the original file/folder

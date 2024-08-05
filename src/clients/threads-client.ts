@@ -32,6 +32,13 @@ export type ThreadsPublishData = {
   access_token: string;
 };
 
+export type ThreadsUserData = {
+  id: string;
+  text: string;
+  media_url: string;
+  permalink: string;
+};
+
 export type ThreadsPostInsights = {
   name: "views" | "likes" | "replies" | "reposts" | "quotes";
   period: string;
@@ -88,10 +95,7 @@ export class ThreadsClient {
           access_token: this.tokens.accessToken,
         },
       })
-      .then((res) => res.data.id)
-      .catch((e) => {
-        throw new Error(e);
-      });
+      .then((res) => res.data.id);
   }
 
   async createTextContainer(text: string): Promise<string> {
@@ -108,9 +112,6 @@ export class ThreadsClient {
       .then((res) => {
         // return media container ID
         return res.data.id;
-      })
-      .catch((e) => {
-        throw new Error(e);
       });
   }
 
@@ -134,9 +135,6 @@ export class ThreadsClient {
       .then((res) => {
         // return media container ID
         return res.data.id;
-      })
-      .catch((e) => {
-        throw new Error(e);
       });
   }
 
@@ -160,9 +158,6 @@ export class ThreadsClient {
       .then((res) => {
         // return media container ID
         return res.data.id;
-      })
-      .catch((e) => {
-        throw new Error(e);
       });
   }
 
@@ -187,9 +182,6 @@ export class ThreadsClient {
       .then((res) => {
         // return media container ID
         return res.data.id;
-      })
-      .catch((e) => {
-        throw new Error(e);
       });
   }
 
@@ -213,9 +205,6 @@ export class ThreadsClient {
       })
       .then((res) => {
         return res.data;
-      })
-      .catch((e) => {
-        throw new Error(e);
       });
   }
 
@@ -244,9 +233,6 @@ export class ThreadsClient {
       .then(async (res) => {
         // res.data.id is mediaId
         return res.data.id;
-      })
-      .catch((e) => {
-        throw new Error(e);
       });
   }
 
@@ -273,9 +259,6 @@ export class ThreadsClient {
           },
           {},
         );
-      })
-      .catch((e) => {
-        throw new Error(e);
       });
   }
 
@@ -285,14 +268,7 @@ export class ThreadsClient {
    * @param limit - How many posts data to retrieve
    * @returns
    */
-  async getUserData(limit: number): Promise<
-    {
-      id: string;
-      text: string;
-      media_url: string;
-      permalink: string;
-    }[]
-  > {
+  async getUserData(limit: number): Promise<ThreadsUserData[]> {
     let userId = "";
     try {
       userId = this.tokens.userId || (await this.getUserId());
@@ -312,9 +288,6 @@ export class ThreadsClient {
         })
         // REVIEW: what's in res.data?
         .then((res) => res.data.data)
-        .catch((e) => {
-          throw new Error(e);
-        })
     );
   }
 

@@ -1,10 +1,10 @@
 import kleur from "kleur";
 import path from "node:path";
-import { ThreadsClient } from "../clients/threads-client";
+import { ThreadsClient, ThreadsUserData } from "../clients/threads-client";
 import { THREADS_IMAGE_FORMATS } from "../constants";
 import { FirebaseFileInfo } from "../storages/firebase";
 import { PostSettings } from "../types";
-import { waitForFile } from "../utils";
+import { ensureData, handleAsync, waitForFile } from "../utils";
 
 export type ThreadsMediaType = "TEXT" | "IMAGE" | "VIDEO" | "CAROUSEL";
 
@@ -202,41 +202,50 @@ async function checkContainerStatus(
 
 // https://developers.facebook.com/docs/threads/insights
 export async function getThreadsStats(client: ThreadsClient) {
-  const { id: mediaId, text, permalink } = (await client.getUserData(1))[0];
+  const userDataResult = await handleAsync<ThreadsUserData[]>(
+    client.getUserData(1),
+  );
+  const userData = ensureData(
+    userDataResult,
+    "Error retrieving user data on Threads",
+  );
 
-  try {
-    const curStats: ThreadsStats = await client.getPostInsights(mediaId);
+  const { id: mediaId, text, permalink } = userData[0];
 
-    const keys = Object.keys(diffStats) as (keyof ThreadsStats)[];
-    for (const key of keys) {
-      if (lastStats[key]) {
-        diffStats[key] = curStats[key] - lastStats[key];
-      } else {
-        diffStats[key] = curStats[key];
-      }
+  const postInsightsResult = await handleAsync<ThreadsStats>(
+    client.getPostInsights(mediaId),
+  );
+  const curStats = ensureData(
+    postInsightsResult,
+    "Error retrieving post insights on Threads",
+  );
+
+  const keys = Object.keys(diffStats) as (keyof ThreadsStats)[];
+  for (const key of keys) {
+    if (lastStats[key]) {
+      diffStats[key] = curStats[key] - lastStats[key];
+    } else {
+      diffStats[key] = curStats[key];
     }
+  }
 
-    const { likes, replies, reposts, quotes } = diffStats;
+  const { likes, replies, reposts, quotes } = diffStats;
 
-    const getDiffStat = (prev: number | undefined, diff: number) => {
-      return (prev !== undefined && diff >= 0 ? "+" : "") + diff.toString();
-    };
+  const getDiffStat = (prev: number | undefined, diff: number) => {
+    return (prev !== undefined && diff >= 0 ? "+" : "") + diff.toString();
+  };
 
-    console.log(`Latest ${bold("Threads")} (${green(permalink)}) stats`);
-    console.log(`Text: ${text}`);
-    // const viewsStr = `Views: ${green(views)}`;
-    const likesStr = `Likes: ${green(getDiffStat(lastStats.likes, likes))}`;
-    const repliesStr = `Replies: ${green(getDiffStat(lastStats.replies, replies))}`;
-    const repostsStr = `Reposts: ${green(getDiffStat(lastStats.reposts, reposts))}`;
-    const quotesStr = `Quotes: ${green(getDiffStat(lastStats.quotes, quotes))}`;
-    console.log(likesStr, repliesStr, repostsStr, quotesStr);
+  console.log(`Latest ${bold("Threads")} (${green(permalink)}) stats`);
+  console.log(`Text: ${text}`);
+  // const viewsStr = `Views: ${green(views)}`;
+  const likesStr = `Likes: ${green(getDiffStat(lastStats.likes, likes))}`;
+  const repliesStr = `Replies: ${green(getDiffStat(lastStats.replies, replies))}`;
+  const repostsStr = `Reposts: ${green(getDiffStat(lastStats.reposts, reposts))}`;
+  const quotesStr = `Quotes: ${green(getDiffStat(lastStats.quotes, quotes))}`;
+  console.log(likesStr, repliesStr, repostsStr, quotesStr);
 
-    // update last stat to current stat
-    for (const key of keys) {
-      lastStats[key] = curStats[key];
-    }
-  } catch (e: any) {
-    console.error(e.response?.data);
-    throw new Error(`Error retrieving post data on Threads \n${e}`);
+  // update last stat to current stat
+  for (const key of keys) {
+    lastStats[key] = curStats[key];
   }
 }
