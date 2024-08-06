@@ -122,10 +122,22 @@ export async function getMastodonStats(client: mastodon.rest.Client) {
 
     console.log(`Latest ${bold("Mastodon")} (${green(url!)}) stats`);
     console.log(`Text: ${content}`);
-    const favesStr = `Faves: ${green(getDiffStat(lastStats.faves, faves))}`;
-    const reblogsStr = `Reblogs: ${green(getDiffStat(lastStats.reblogs, reblogs))}`;
-    const repliesStr = `Replies: ${green(getDiffStat(lastStats.replies, replies))}`;
-    console.log(favesStr, reblogsStr, repliesStr);
+    const favesStr = faves
+      ? `Faves: ${green(getDiffStat(lastStats.faves, faves))}`
+      : "";
+    const reblogsStr = reblogs
+      ? `Reblogs: ${green(getDiffStat(lastStats.reblogs, reblogs))}`
+      : "";
+    const repliesStr = replies
+      ? `Replies: ${green(getDiffStat(lastStats.replies, replies))}`
+      : "";
+
+    const hasUpdates = [favesStr, reblogsStr, repliesStr].some(
+      (str) => str.length > 0,
+    );
+    hasUpdates
+      ? console.log(favesStr, reblogsStr, repliesStr)
+      : console.log("No updates found");
 
     // update last stat to current stat
     for (const key of keys) {

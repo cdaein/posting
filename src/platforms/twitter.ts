@@ -186,17 +186,30 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
 
     // const impressionsStr = `Impressions: ${green(public_metrics.impression_count)}`;
     // const engagementsStr = `Engagements: ${green(non_public_metrics.engagements)}`;
-    const likesStr = `Likes: ${green(getDiffStat(lastStats.likes, likes))}`;
-    const retweetsStr = `Retweets: ${green(getDiffStat(lastStats.retweets, retweets))}`;
-    const replyStr = `Replies: ${green(getDiffStat(lastStats.replies, replies))}`;
-    const quotesStr = `Quotes: ${green(getDiffStat(lastStats.quotes, quotes))}`;
+    const likesStr = likes
+      ? `Likes: ${green(getDiffStat(lastStats.likes, likes))}`
+      : "";
+    const retweetsStr = retweets
+      ? `Retweets: ${green(getDiffStat(lastStats.retweets, retweets))}`
+      : "";
+    const replyStr = replies
+      ? `Replies: ${green(getDiffStat(lastStats.replies, replies))}`
+      : "";
+    const quotesStr = quotes
+      ? `Quotes: ${green(getDiffStat(lastStats.quotes, quotes))}`
+      : "";
     // const bookmarksStr = `Bookmarks: ${green(getDiffStat(lastStats.bookmarks, bookmarks))}`;
 
     // URL - https://x.com/[USERNAME]/status/[POST_ID]
     const postUrl = `https://x.com/${username}/status/${id}`;
     console.log(`Latest ${bold("Twitter")} (${green(postUrl)}) stats`);
     console.log(`Text: ${text}`);
-    console.log(likesStr, retweetsStr, replyStr, quotesStr);
+    const hasUpdates = [likesStr, retweetsStr, replyStr, quotesStr].some(
+      (str) => str.length > 0,
+    );
+    hasUpdates
+      ? console.log(likesStr, retweetsStr, replyStr, quotesStr)
+      : console.log("No updates found");
 
     // update last stat to current stat
     for (const key of keys) {

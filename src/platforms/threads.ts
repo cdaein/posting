@@ -253,11 +253,25 @@ export async function getThreadsStats(client: ThreadsClient) {
   console.log(`Latest ${bold("Threads")} (${green(permalink)}) stats`);
   console.log(`Text: ${text}`);
   // const viewsStr = `Views: ${green(views)}`;
-  const likesStr = `Likes: ${green(getDiffStat(lastStats.likes, likes))}`;
-  const repliesStr = `Replies: ${green(getDiffStat(lastStats.replies, replies))}`;
-  const repostsStr = `Reposts: ${green(getDiffStat(lastStats.reposts, reposts))}`;
-  const quotesStr = `Quotes: ${green(getDiffStat(lastStats.quotes, quotes))}`;
-  console.log(likesStr, repliesStr, repostsStr, quotesStr);
+  const likesStr = likes
+    ? `Likes: ${green(getDiffStat(lastStats.likes, likes))}`
+    : "";
+  const repliesStr = replies
+    ? `Replies: ${green(getDiffStat(lastStats.replies, replies))}`
+    : "";
+  const repostsStr = reposts
+    ? `Reposts: ${green(getDiffStat(lastStats.reposts, reposts))}`
+    : "";
+  const quotesStr = quotes
+    ? `Quotes: ${green(getDiffStat(lastStats.quotes, quotes))}`
+    : "";
+
+  const hasUpdates = [likesStr, repliesStr, repostsStr, quotesStr].some(
+    (str) => str.length > 0,
+  );
+  hasUpdates
+    ? console.log(likesStr, repliesStr, repostsStr, quotesStr)
+    : console.log("No updates found");
 
   // update last stat to current stat
   for (const key of keys) {

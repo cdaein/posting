@@ -166,10 +166,22 @@ export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
       // const likes = `Likes: ${green(lastStats.likeCount !== 0 && likeCount >= 0 ? "+" : "" + likeCount.toString())}`;
       // const reposts = `Reblogs: ${green(lastStats.repostCount !== 0 && repostCount >= 0 ? "+" : "" + repostCount.toString())}`;
       // const replies = `Replies: ${green(lastStats.replyCount !== 0 && replyCount >= 0 ? "+" : "" + replyCount.toString())}`;
-      const likes = `Likes: ${green(getDiffStat(lastStats.likeCount, likeCount))}`;
-      const reposts = `Reblogs: ${green(getDiffStat(lastStats.repostCount, repostCount))}`;
-      const replies = `Replies: ${green(getDiffStat(lastStats.replyCount, replyCount))}`;
-      console.log(likes, reposts, replies);
+      const likes = likeCount
+        ? `Likes: ${green(getDiffStat(lastStats.likeCount, likeCount))}`
+        : "";
+      const reposts = repostCount
+        ? `Reblogs: ${green(getDiffStat(lastStats.repostCount, repostCount))}`
+        : "";
+      const replies = replyCount
+        ? `Replies: ${green(getDiffStat(lastStats.replyCount, replyCount))}`
+        : "";
+
+      const hasUpdates = [likes, reposts, replies].some(
+        (str) => str.length > 0,
+      );
+      hasUpdates
+        ? console.log(likes, reposts, replies)
+        : console.log("Noe updates found");
 
       // update last stat to current stat
       for (const key of keys) {
