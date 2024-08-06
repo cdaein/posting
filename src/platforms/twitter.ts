@@ -6,6 +6,7 @@ import {
 } from "twitter-api-v2";
 import { EnvVars, PostSettings } from "../types";
 import kleur from "kleur";
+import { getDiffStat } from "../utils";
 
 type MostRecentTweetStats = {
   id: string;
@@ -181,11 +182,6 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
       }
     }
 
-    // REVIEW: if stat never changed (always 0), it doesn't display "+".
-    const getDiffStat = (prev: number | undefined, diff: number) => {
-      return (prev !== undefined && diff >= 0 ? "+" : "") + diff.toString();
-    };
-
     const { likes, retweets, replies, quotes, bookmarks } = diffStats;
 
     // const impressionsStr = `Impressions: ${green(public_metrics.impression_count)}`;
@@ -194,13 +190,13 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
     const retweetsStr = `Retweets: ${green(getDiffStat(lastStats.retweets, retweets))}`;
     const replyStr = `Replies: ${green(getDiffStat(lastStats.replies, replies))}`;
     const quotesStr = `Quotes: ${green(getDiffStat(lastStats.quotes, quotes))}`;
-    const bookmarksStr = `Bookmarks: ${green(getDiffStat(lastStats.bookmarks, bookmarks))}`;
+    // const bookmarksStr = `Bookmarks: ${green(getDiffStat(lastStats.bookmarks, bookmarks))}`;
 
     // URL - https://x.com/[USERNAME]/status/[POST_ID]
     const postUrl = `https://x.com/${username}/status/${id}`;
     console.log(`Latest ${bold("Twitter")} (${green(postUrl)}) stats`);
     console.log(`Text: ${text}`);
-    console.log(likesStr, retweetsStr, replyStr, quotesStr, bookmarksStr);
+    console.log(likesStr, retweetsStr, replyStr, quotesStr);
 
     // update last stat to current stat
     for (const key of keys) {

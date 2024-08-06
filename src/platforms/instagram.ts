@@ -50,7 +50,7 @@ export async function uploadInstagram(
 
   // REVIEW: should be automatically detected and handled
   if (postType === "text") {
-    console.log(`Instagram does not support text-only post. Skipping..`);
+    console.warn(`Instagram does not support text-only post. Skipping..`);
     return;
   }
 
@@ -209,9 +209,6 @@ async function createMediaContainer(
       return res.data.id;
     })
     .catch((e) => {
-      if (e.response?.data) {
-        console.error(e.response.data);
-      }
-      throw new Error(`Error creating media container to Instagram \n${e}`);
+      throw new Error(`Error creating media container on Instagram \n${e}`);
     });
 }

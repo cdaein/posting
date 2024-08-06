@@ -7,6 +7,10 @@ import kleur from "kleur";
 
 const { yellow } = kleur;
 
+export const getDiffStat = (prev: number | undefined, diff: number) => {
+  return (prev !== undefined && diff >= 0 ? "+" : "") + diff.toString();
+};
+
 /**
  * It will make sure desired `data` is available and returned. Otherwise, it throws an error.
  * @template T - could be any data type

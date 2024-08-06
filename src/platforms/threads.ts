@@ -4,7 +4,7 @@ import { ThreadsClient, ThreadsUserData } from "../clients/threads-client";
 import { THREADS_IMAGE_FORMATS } from "../constants";
 import { FirebaseFileInfo } from "../storages/firebase";
 import { PostSettings } from "../types";
-import { ensureData, handleAsync } from "../utils";
+import { ensureData, getDiffStat, handleAsync } from "../utils";
 
 export type ThreadsMediaType = "TEXT" | "IMAGE" | "VIDEO" | "CAROUSEL";
 
@@ -249,10 +249,6 @@ export async function getThreadsStats(client: ThreadsClient) {
   }
 
   const { likes, replies, reposts, quotes } = diffStats;
-
-  const getDiffStat = (prev: number | undefined, diff: number) => {
-    return (prev !== undefined && diff >= 0 ? "+" : "") + diff.toString();
-  };
 
   console.log(`Latest ${bold("Threads")} (${green(permalink)}) stats`);
   console.log(`Text: ${text}`);

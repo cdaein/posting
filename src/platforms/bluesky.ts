@@ -4,6 +4,7 @@ import mime from "mime-types";
 import fs from "node:fs";
 import path from "node:path";
 import { Config, EnvVars, PostSettings } from "../types";
+import { getDiffStat } from "../utils";
 
 export type ImageRecord = {
   alt: string;
@@ -159,10 +160,6 @@ export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
       }
 
       const { likeCount, repostCount, replyCount } = diffStats;
-
-      const getDiffStat = (prev: number | undefined, diff: number) => {
-        return (prev !== undefined && diff >= 0 ? "+" : "") + diff.toString();
-      };
 
       console.log(`Latest ${bold("Bluesky")} (${green(postUrl)}) stats`);
       console.log(`Text: ${text}`);

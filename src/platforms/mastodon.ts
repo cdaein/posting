@@ -3,6 +3,7 @@ import fs from "node:fs";
 import type { Config, EnvVars, PostSettings } from "../types";
 import path from "node:path";
 import kleur from "kleur";
+import { getDiffStat } from "../utils";
 
 // REVIEW: masto doesn't export this type
 interface MediaAttachment {
@@ -118,10 +119,6 @@ export async function getMastodonStats(client: mastodon.rest.Client) {
     }
 
     const { faves, reblogs, replies } = diffStats;
-
-    const getDiffStat = (prev: number | undefined, diff: number) => {
-      return (prev !== undefined && diff >= 0 ? "+" : "") + diff.toString();
-    };
 
     console.log(`Latest ${bold("Mastodon")} (${green(url!)}) stats`);
     console.log(`Text: ${content}`);
