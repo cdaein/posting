@@ -8,7 +8,7 @@ process.md
 todo.md
 
 .DS_Store
-.env
+.env*
 firebase-key.json
 user.config.json
 serviceAccountKey.json
