@@ -36,7 +36,7 @@ import { uploadMastodon } from "./platforms/mastodon";
 import { uploadThreads } from "./platforms/threads";
 import { uploadTwitter } from "./platforms/twitter";
 import { initFirebase, uploadFirebase } from "./storages/firebase";
-import { Config, EnvVars, Platform, PostSettings } from "./types";
+import { EnvVars, Platform, PostSettings } from "./types";
 import { waitForFile } from "./utils";
 
 const { bold, yellow } = kleur;
@@ -85,7 +85,6 @@ export async function uploadPost(
     twitterClient?: TwitterApiReadWrite;
   },
   postFolderPath: string,
-  userConfig: Config,
   dev: boolean,
 ) {
   const firebaseFileInfos: {
@@ -124,7 +123,7 @@ export async function uploadPost(
     let firebaseReady = false;
     if (platforms.includes("threads") || platforms.includes("instagram")) {
       try {
-        const { storage, uid } = await initFirebase(envVars, userConfig);
+        const { storage, uid } = await initFirebase(envVars);
         const { fileInfos } = settings;
         console.log("Uploading media file(s) to Firebase Storage..");
         for (let i = 0; i < fileInfos.length; i++) {

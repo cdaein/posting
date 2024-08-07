@@ -13,11 +13,13 @@ https://github.com/user-attachments/assets/30dd1525-bc9b-446d-bddc-7bbfb361fb5f
 1. Install dependencies. `npm i`
 1. Build the program. `npm run build`
 1. Install as global command (dont forget the `.`): `npm i -g .`
-1. Copy `.env.example` to `.env` and fill with your own details.
-1. Copy `user.config.json.example` to `user.config.json` and fill with your own details. Most of all, set `watchDir` where you will store scheduled posts.
-1. Use with commands below.
+1. Run the commands below to set up an run the app.
 
 ## Commands
+
+### `posting setup`
+
+Run `posting setup` to set up envrionment variables such as API keys. Your API credentials are locally stored in the project's install directory and only used for each platform's API authentication. Run the script again to update any details.
 
 ### `posting create`
 
@@ -38,11 +40,10 @@ If you pass `posting watch --stats` option, it checks stats (like counts, etc.) 
 ## Supported Platforms
 
 - Bluesky
-  - You need Bluesky email and password in `.env`. Also, put your handle without `@` symbol in `user.config.json` to check stats.
+  - You need Bluesky email and password as well as your handle.
   - Bluesky only supports image post.
 - Mastodon
-  - Add your instance url to `user.config.json`. ex. `"instanceUrl": "https://mastodon.social"`
-  - Getting API Key is very easy. Just go to your instance, click Preferences > Developement. Create a New Application with read/write access. Then, copy the Access Token to `.env`.
+  - Getting API Key is very easy. Just go to your instance, click Preferences > Developement. Create a New Application with read/write access.
 - ~~Instagram~~
   - IG API doesn't work as I expect it to. It's one of the worst APIs I've ever had to deal with.
 - Threads

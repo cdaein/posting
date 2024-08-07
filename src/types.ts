@@ -2,7 +2,9 @@ export type EnvVars = {
   //
   blueskyEmail?: string;
   blueskyPassword?: string;
+  blueskyHandle?: string;
   //
+  firebaseStorageBucket: string;
   firebaseApiKey: string;
   firebaseEmail: string;
   firebasePassword: string;
@@ -10,7 +12,7 @@ export type EnvVars = {
   instagramUserId: string;
   instagramAccessToken: string;
   //
-  mastodonInstaceUrl?: string;
+  mastodonInstanceUrl?: string;
   mastodonAccessToken?: string;
   //
   threadsAppId?: string;
@@ -29,17 +31,6 @@ export type Config = {
   /** interval in minutes */
   processInterval: number;
   cronTime: string;
-  firebase: {
-    options: {
-      storageBucket: string;
-    };
-  };
-  bluesky?: {
-    handle: string;
-  };
-  mastodon?: {
-    instanceUrl: string;
-  };
 };
 
 export type Platform =
@@ -61,6 +52,6 @@ export type PostSettings = {
   postType: PostType;
   platforms: Platform[];
   bodyText: string;
-  /** `{ filename, altText }` */
+  /** `{ filename, altText }[]` */
   fileInfos: FileInfo[];
 };

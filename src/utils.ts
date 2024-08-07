@@ -202,6 +202,8 @@ export function resolvePath(pathArg: string) {
   return path.resolve(pathArg);
 }
 
+// FIX: no longer need to merge config as this should now be handled
+// by program, not user.
 export async function loadConfig(
   defaultConfig: Config,
   userConfigPath: string,

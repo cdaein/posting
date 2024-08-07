@@ -127,11 +127,15 @@ export async function uploadBluesky(
   }
 }
 
-export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
-  if (userConfig.bluesky?.handle) {
+export async function getBlueskyStats(
+  envVars: EnvVars,
+  agent: BskyAgent,
+  userConfig: Config,
+) {
+  if (envVars.blueskyHandle) {
     try {
       const authorFeed = await agent.getAuthorFeed({
-        actor: userConfig.bluesky.handle,
+        actor: envVars.blueskyHandle,
         limit: 1,
       });
       // URI returned format - at://did:plc:b3qws3ybzok4crllfg67jakw/app.bsky.feed.post/3kyobz
@@ -142,7 +146,7 @@ export async function getBlueskyStats(agent: BskyAgent, userConfig: Config) {
       const post = res.data.thread.post as BlueskyStats;
       // @ts-ignore
       const text = post.record.text as string;
-      const postUrl = `https://bsky.app/profile/${userConfig.bluesky.handle}/post/${path.basename(uri)}`;
+      const postUrl = `https://bsky.app/profile/${envVars.blueskyHandle}/post/${path.basename(uri)}`;
 
       const curStats: BlueskyStats = {
         likeCount: post.likeCount,

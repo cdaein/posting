@@ -4,11 +4,6 @@ export const defaultConfig: Config = {
   watchDir: "~/Desktop/Scheduled-Social-Posts",
   processInterval: 5,
   cronTime: "0 0,6-23 * * *",
-  firebase: {
-    options: {
-      storageBucket: "",
-    },
-  },
 };
 
 export const supportedPlatforms: Platform[] = [

@@ -30,10 +30,10 @@ const diffStats: MastodonStats = {
 
 const { bold, green, yellow } = kleur;
 
-export function initMastodonClient(envVars: EnvVars, userConfig: Config) {
-  if (userConfig.mastodon?.instanceUrl && envVars.mastodonAccessToken) {
+export function initMastodonClient(envVars: EnvVars) {
+  if (envVars.mastodonInstanceUrl && envVars.mastodonAccessToken) {
     return createRestAPIClient({
-      url: userConfig.mastodon.instanceUrl,
+      url: envVars.mastodonInstanceUrl,
       accessToken: envVars.mastodonAccessToken,
     });
   }

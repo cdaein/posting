@@ -9,6 +9,7 @@ import { defaultConfig } from "./constants";
 import { EnvVars } from "./types";
 import { loadConfig, resolvePath } from "./utils";
 import figlet from "figlet";
+import { initSetupCommand } from "./commands/setup";
 
 // access .env from anywhere (when calling as global command)
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -20,6 +21,7 @@ const envVars: EnvVars = {
   blueskyEmail: process.env.BLUESKY_EMAIL,
   blueskyPassword: process.env.BLUESKY_PASSWORD,
   //
+  firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET!,
   firebaseApiKey: process.env.FIREBASE_API_KEY!,
   firebaseEmail: process.env.FIREBASE_EMAIL!,
   firebasePassword: process.env.FIREBASE_PASSWORD!,
@@ -27,7 +29,7 @@ const envVars: EnvVars = {
   instagramUserId: process.env.INSTAGRAM_USER_ID!,
   instagramAccessToken: process.env.INSTAGRAM_ACCESS_TOKEN!,
   //
-  mastodonInstaceUrl: process.env.MASTODON_INSTANCE_URL,
+  mastodonInstanceUrl: process.env.MASTODON_INSTANCE_URL,
   mastodonAccessToken: process.env.MASTODON_ACCESS_TOKEN,
   //
   threadsAppId: process.env.THREADS_APP_ID,
@@ -46,14 +48,6 @@ const userConfig = await loadConfig(defaultConfig, "../user.config.json");
 
 // set up watch directory
 const watchDir = resolvePath(userConfig.watchDir);
-if (!fs.existsSync(watchDir)) {
-  console.error(`Watch directory doesn't exist.`);
-  process.exit(1);
-}
-if (!fs.lstatSync(watchDir).isDirectory()) {
-  console.error(`Watch directory is not a directory.`);
-  process.exit(1);
-}
 
 console.log(
   figlet.textSync("posting", {
@@ -68,6 +62,7 @@ console.log();
 program.version(version).description(description);
 
 // init commands
+initSetupCommand(program);
 initCreateCommand(program, watchDir);
 initWatchCommand(program, watchDir, envVars, userConfig);
 

@@ -10,7 +10,7 @@ import {
 } from "firebase/storage";
 import fs from "node:fs";
 import path from "node:path";
-import { Config, EnvVars } from "../types";
+import { EnvVars } from "../types";
 
 export type FirebaseStorageInfo = {
   storage: FirebaseStorage;
@@ -24,7 +24,6 @@ export type FirebaseFileInfo = {
 
 export async function initFirebase(
   envVars: EnvVars,
-  userConfig: Config,
 ): Promise<FirebaseStorageInfo> {
   // initializeApp({
   //   apiKey: "AIza....",                             // Auth / General Use
@@ -35,7 +34,7 @@ export async function initFirebase(
   // });
   const app = initializeApp({
     apiKey: envVars.firebaseApiKey,
-    ...userConfig.firebase.options,
+    storageBucket: envVars.firebaseStorageBucket,
   });
   const storage = getStorage(app);
   const auth = getAuth(app);

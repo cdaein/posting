@@ -5,6 +5,7 @@ import kleur from "kleur";
 import fs from "node:fs";
 import path from "path";
 import prompts from "prompts";
+import { initThreadsClient } from "./clients/threads-client";
 import { TIME_FUTURE_THRESHOLD, TIME_PAST_THRESHOLD } from "./constants";
 import { getBlueskyStats, initBlueskyAgent } from "./platforms/bluesky";
 import { getMastodonStats, initMastodonClient } from "./platforms/mastodon";
@@ -22,19 +23,27 @@ import { Config, EnvVars, Platform, PostType } from "./types";
 import { getMaxAttachments, uploadPost } from "./upload-post";
 import { formatPostFolderName, versionUpPath } from "./utils";
 import { watchStart } from "./watcher";
-import { initThreadsClient } from "./clients/threads-client";
 
 const { bold, green, red, yellow } = kleur;
 
+const promptOptions = {
+  onCancel: () => {
+    throw new Error(red("✖") + " cancelled");
+  },
+};
+
 export function initCreateCommand(program: Command, watchDir: string) {
   program.command("create").action(async () => {
-    try {
-      const promptOptions = {
-        onCancel: () => {
-          throw new Error(red("✖") + " cancelled");
-        },
-      };
+    if (!fs.existsSync(watchDir)) {
+      console.error(`Watch directory doesn't exist at ${watchDir}`);
+      process.exit(1);
+    }
+    if (!fs.lstatSync(watchDir).isDirectory()) {
+      console.error(`Watch directory is not a directory.`);
+      process.exit(1);
+    }
 
+    try {
       let platforms: Platform[] = [];
       // make sure at least 1 platform selected
       while (platforms.length === 0) {
@@ -161,10 +170,19 @@ export function initWatchCommand(
     .option("--debug", "Debug log")
     .option("--dev", "Dev mode. No post is uploaded.")
     .action(async (opts) => {
+      if (!fs.existsSync(watchDir)) {
+        console.error(`Watch directory doesn't exist at ${watchDir}`);
+        process.exit(1);
+      }
+      if (!fs.lstatSync(watchDir).isDirectory()) {
+        console.error(`Watch directory is not a directory.`);
+        process.exit(1);
+      }
+
       console.log(`Watching ${yellow(watchDir)}`);
 
       const blueskyAgent = await initBlueskyAgent(envVars);
-      const mastodonClient = initMastodonClient(envVars, userConfig);
+      const mastodonClient = initMastodonClient(envVars);
       const threadsClient = initThreadsClient(envVars);
       const twitterClient = initTwitterClient(envVars);
 
@@ -182,7 +200,7 @@ export function initWatchCommand(
 
             if (blueskyAgent) {
               try {
-                await getBlueskyStats(blueskyAgent, userConfig);
+                await getBlueskyStats(envVars, blueskyAgent, userConfig);
               } catch (e: unknown) {
                 e instanceof Error && console.error(e.message);
               }
@@ -220,7 +238,6 @@ export function initWatchCommand(
             envVars,
             { blueskyAgent, mastodonClient, threadsClient, twitterClient },
             folderPath,
-            userConfig,
             opts.dev,
           )
             .then(async () => {
