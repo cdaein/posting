@@ -43,6 +43,7 @@ const promptOptions = {
 };
 
 /**
+ * Update `.env` file with `newEnv` data. If key doesn't exist in `.env`, a new one will be created.
  * @param envPath - `.env` file path
  * @param newEnv - new env object with key/value paris
  */
@@ -123,10 +124,10 @@ Login email and password to use APIs.
             blueskyAuthQuestions,
             promptOptions,
           );
-
           for (const key of Object.keys(blueskyAuthData)) {
             newEnv[key] = blueskyAuthData[key];
           }
+          updateEnv(envPath, newEnv);
         }
         if (platform === "firebase") {
           console.log(`
@@ -138,10 +139,10 @@ It is a user account you need to make from Firebase Console.
             firebaseAuthQuestions,
             promptOptions,
           );
-
           for (const key of Object.keys(firebaseAuthData)) {
             newEnv[key] = firebaseAuthData[key];
           }
+          updateEnv(envPath, newEnv);
         }
         if (platform === "mastodon") {
           console.log(`
@@ -151,10 +152,10 @@ Go to your Mastodon instance preferences > Development to get an Access Token.
             mastodonAuthQuestions,
             promptOptions,
           );
-
           for (const key of Object.keys(mastodonAuthData)) {
             newEnv[key] = mastodonAuthData[key];
           }
+          updateEnv(envPath, newEnv);
         }
         if (platform === "threads") {
           console.log(`
@@ -165,10 +166,10 @@ public URLs for media files.
             threadsAuthQuestions,
             promptOptions,
           );
-
           for (const key of Object.keys(threadsAuthData)) {
             newEnv[key] = threadsAuthData[key];
           }
+          updateEnv(envPath, newEnv);
         }
         if (platform === "twitter") {
           console.log(`
@@ -178,14 +179,12 @@ Get a free Twitter API token and give read/write permission.
             twitterAuthQuestions,
             promptOptions,
           );
-
           for (const key of Object.keys(twitterAuthData)) {
             newEnv[key] = twitterAuthData[key];
           }
+          updateEnv(envPath, newEnv);
         }
       }
-
-      updateEnv(envPath, newEnv);
     } catch (e: unknown) {
       console.log((e as Error).message);
       return;
