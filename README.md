@@ -6,20 +6,15 @@ Schedule social media posting with simple local folder structure.
 
 https://github.com/user-attachments/assets/30dd1525-bc9b-446d-bddc-7bbfb361fb5f
 
-## Set up
+## Installation
 
-1. Clone this repo. `git clone https://github.com/cdaein/posting.git`
-1. Go into the repo directory: `cd posting`
-1. Install dependencies. `npm i`
-1. Build the program. `npm run build`
-1. Install as global command (dont forget the `.`): `npm i -g .`
-1. Run the commands below to set up an run the app.
+`npm install -g @daeinc/posting`
 
 ## Commands
 
 ### `posting setup`
 
-Run `posting setup` to set up envrionment variables such as API keys. Your API credentials are locally stored in the project's install directory and only used for each platform's API authentication. Run the script again to update any details.
+Run `posting setup` to set up envrionment variables such as API keys. Your API credentials are locally stored in `.env` file of the project's install directory and only used for each platform's API authentication. Run the script again to update any details.
 
 ### `posting create`
 
