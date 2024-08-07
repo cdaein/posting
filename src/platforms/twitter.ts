@@ -1,12 +1,19 @@
 import path from "node:path";
 import {
+  TweetV2PostTweetResult,
   TwitterApi,
   TwitterApiReadWrite,
   TwitterApiTokens,
 } from "twitter-api-v2";
-import { EnvVars, PostSettings } from "../types";
+import { EnvVars, PostsSettings } from "../types";
 import kleur from "kleur";
 import { getDiffStat } from "../utils";
+
+type MediaIds =
+  | [string]
+  | [string, string]
+  | [string, string, string]
+  | [string, string, string, string];
 
 type MostRecentTweetStats = {
   id: string;
@@ -81,56 +88,69 @@ export function initTwitterClient(envVars: EnvVars) {
 export async function uploadTwitter(
   client: TwitterApiReadWrite,
   folderPath: string,
-  settings: PostSettings,
+  settings: PostsSettings,
   dev: boolean,
 ) {
-  const { postType, bodyText, fileInfos } = settings;
-
   if (dev) {
     return "DEV MODE TWITTER";
   }
 
-  console.log(`Publishing on ${bold("Twitter")}..`);
-  try {
-    if (postType === "text") {
-      const status = await client.v2.tweet(bodyText);
-      console.log(`Published on Twitter. id: ${status.data.id}`);
-      return status;
-    } else {
-      const mediaIds: string[] = [];
-      for (const fileInfo of fileInfos) {
-        const { filename, altText } = fileInfo;
-        console.log(`Uploading file ${yellow(filename)}`);
-        const mediaId = await client.v1.uploadMedia(
-          path.join(folderPath, filename),
-        );
+  const { posts } = settings;
 
-        if (altText) {
-          await client.v1.createMediaMetadata(mediaId, {
-            alt_text: { text: altText },
-          });
+  const statuses: TweetV2PostTweetResult[] = [];
+
+  for (let i = 0; i < posts.length; i++) {
+    const post = posts[i];
+    const { postType, bodyText, fileInfos } = post;
+
+    console.log(`Publishing on ${bold("Twitter")}..`);
+    try {
+      if (postType === "text") {
+        const status =
+          i === 0
+            ? await client.v2.tweet(bodyText)
+            : await client.v2.reply(bodyText, statuses[i - 1].data.id);
+        console.log(`Published on Twitter. id: ${status.data.id}`);
+        statuses.push(status);
+      } else {
+        const mediaIds: string[] = [];
+        for (const fileInfo of fileInfos) {
+          const { filename, altText } = fileInfo;
+          console.log(`Uploading file ${yellow(filename)}`);
+          const mediaId = await client.v1.uploadMedia(
+            path.join(folderPath, filename),
+          );
+
+          if (altText) {
+            await client.v1.createMediaMetadata(mediaId, {
+              alt_text: { text: altText },
+            });
+          }
+          mediaIds.push(mediaId);
+          console.log(`File uploaded. id: ${green(mediaId)}`);
         }
-        mediaIds.push(mediaId);
-        console.log(`File uploaded. id: ${green(mediaId)}`);
+        const media = {
+          media_ids: mediaIds as MediaIds,
+        };
+        const status =
+          i === 0
+            ? await client.v2.tweet(bodyText, {
+                media,
+              })
+            : await client.v2.reply(bodyText, statuses[i - 1].data.id, {
+                media,
+              });
+        console.log(
+          `Published on ${bold("Twitter")}. id: ${green(status.data.id)}`,
+        );
+        statuses.push(status);
       }
-      const status = await client.v2.tweet(bodyText, {
-        media: {
-          media_ids: mediaIds as
-            | [string]
-            | [string, string]
-            | [string, string, string]
-            | [string, string, string, string],
-        },
-      });
-      console.log(
-        `Published on ${bold("Twitter")}. id: ${green(status.data.id)}`,
-      );
-      return status.data;
+    } catch (e: any) {
+      console.error(e);
+      throw new Error(`Error uploading to Twitter \n${e}`);
     }
-  } catch (e: any) {
-    console.error(e);
-    throw new Error(`Error uploading to Twitter \n${e}`);
   }
+  return statuses;
 }
 
 /**
