@@ -260,14 +260,11 @@ export const dateQuestionFn = (watchDir: string): PromptObject => {
     ),
     mask: "YYYY.MMM.D ddd HH:mm",
     validate: (value: Date) => {
-      if (
-        value.getTime() <
-        Date.now() + userConfig.processInterval * 60 * 1000
-      ) {
-        return `Must be greater than process interval of ${userConfig.processInterval} minutes`;
+      if (value.getTime() < Date.now()) {
+        return `Must be greater than the current time`;
       }
 
-      // REVIEW: check for already existing folder and verion up
+      // TODO: check for already existing folder and verion up
       const folderName = formatPostFolderName(value.toISOString());
       if (fs.existsSync(path.join(watchDir, folderName))) {
         return `Pick a different time. Another post is already scheduled.`;
