@@ -1,6 +1,6 @@
 import { createRestAPIClient, mastodon } from "masto";
 import fs from "node:fs";
-import type { Config, EnvVars, PostSettings } from "../types";
+import type { Config, EnvVars, PostSettings, PostsSettings } from "../types";
 import path from "node:path";
 import kleur from "kleur";
 import { getDiffStat } from "../utils";
@@ -43,54 +43,65 @@ export function initMastodonClient(envVars: EnvVars) {
 export async function uploadMastodon(
   client: mastodon.rest.Client,
   folderPath: string,
-  settings: PostSettings,
+  settings: PostsSettings,
   dev: boolean,
 ) {
-  const { postType, bodyText, fileInfos } = settings;
-
   if (dev) {
     return { url: "DEV MODE MASTODON" };
   }
 
-  const mediaAttachments: MediaAttachment[] = [];
+  const { posts } = settings;
 
-  for (const fileInfo of fileInfos) {
-    const { filename, altText } = fileInfo;
-    console.log(`Uploading ${yellow(filename)}`);
-    try {
-      if (postType === "media") {
-        const file = fs.readFileSync(path.join(folderPath, filename));
-        // upload media file
-        const mediaAttachment = await client.v2.media.create({
-          file: new Blob([file]),
-          description: altText || "",
-        });
-        mediaAttachments.push(mediaAttachment);
-        console.log(`Uploaded the file. id: ${green(mediaAttachment.id)}`);
+  const statuses: mastodon.v1.Status[] = [];
+
+  for (let i = 0; i < posts.length; i++) {
+    const post = posts[i];
+    const { postType, bodyText, fileInfos } = post;
+
+    const mediaAttachments: MediaAttachment[] = [];
+
+    for (const fileInfo of fileInfos) {
+      const { filename, altText } = fileInfo;
+      console.log(`Uploading ${yellow(filename)}`);
+      try {
+        if (postType === "media") {
+          const file = fs.readFileSync(path.join(folderPath, filename));
+          // upload media file
+          const mediaAttachment = await client.v2.media.create({
+            file: new Blob([file]),
+            description: altText || "",
+          });
+          mediaAttachments.push(mediaAttachment);
+          console.log(`Uploaded the file. id: ${green(mediaAttachment.id)}`);
+        }
+      } catch (e) {
+        throw new Error(`Error uploading media to Mastodon \n${e}`);
       }
+    }
+
+    try {
+      // publish
+      console.log(`Publishing on ${bold("Mastodon")}..`);
+      const status = await client.v1.statuses.create({
+        status: bodyText,
+        visibility: "public",
+        // conditionally add mediaIds
+        ...(mediaAttachments.length > 0
+          ? {
+              mediaIds: mediaAttachments.map((media) => media.id),
+            }
+          : {}),
+        ...(i !== 0 ? { inReplyToId: statuses[i - 1].id } : {}),
+      });
+      console.log(
+        `Published on ${bold("Mastodon")}. url: ${green(status.url!)}`,
+      );
+      statuses.push(status);
     } catch (e) {
-      throw new Error(`Error uploading media to Mastodon \n${e}`);
+      throw new Error(`Error publishing to Mastodon \n${e}`);
     }
   }
-
-  try {
-    // publish
-    console.log(`Publishing on ${bold("Mastodon")}..`);
-    const status = await client.v1.statuses.create({
-      status: bodyText,
-      visibility: "public",
-      // conditionally add mediaIds
-      ...(mediaAttachments.length > 0
-        ? {
-            mediaIds: mediaAttachments.map((media) => media.id),
-          }
-        : {}),
-    });
-    console.log(`Published on ${bold("Mastodon")}. url: ${green(status.url!)}`);
-    return { url: status.url };
-  } catch (e) {
-    throw new Error(`Error publishing to Mastodon \n${e}`);
-  }
+  return statuses;
 }
 
 export async function getMastodonStats(client: mastodon.rest.Client) {
