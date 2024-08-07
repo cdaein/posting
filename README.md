@@ -35,7 +35,8 @@ If you pass `posting watch --stats` option, it checks stats (like counts, etc.) 
 ## Supported Platforms
 
 - Bluesky
-  - You need Bluesky email and password as well as your handle.
+  - Go to your account Settings > App Passwords and generate one.
+  - Use your email, app apssword and handle when setting up with `posting setup`.
   - Bluesky only supports image post.
 - Mastodon
   - Getting API Key is very easy. Just go to your instance, click Preferences > Developement. Create a New Application with read/write access.
@@ -46,7 +47,7 @@ If you pass `posting watch --stats` option, it checks stats (like counts, etc.) 
   - When generating Authourization Code, include in the URL parameters: `scope=threads_basic,threads_content_publish,threads_manage_replies,threads_read_replies,threads_manage_insights`
   - Threads API uses `curl` to download media files so it requires public URLs (no local uploading) for file attachments. Posting currently relies on Firebase Storage for this, which means you will need Firebase account. If posting is sucessful, the uploaded file is deleted from Firebase. Free tier of Firebase should be good enough in most cases.
 - Twitter
-  - Free Developer account is good enough for posting text and media tweets. Make sure to give read/write access when creating Access Token.
+  - Get free Developer account. Make sure to give read/write access when creating Access Token.
 
 ## Disclaimer
 
