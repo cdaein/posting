@@ -241,6 +241,15 @@ export const multiFilesQuestionFn = (
   ];
 };
 
+export const hasReplyQuestion: PromptObject = {
+  type: "toggle",
+  name: "hasReply",
+  message: "Do you want to add a reply?",
+  initial: false,
+  active: "Yes",
+  inactive: "No",
+};
+
 export const dateQuestionFn = (watchDir: string): PromptObject => {
   return {
     type: "date",

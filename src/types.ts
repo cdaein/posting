@@ -47,11 +47,17 @@ export type FileInfo = {
   altText: string;
 };
 
-/** User-generated post settings. Normally, it comes from `posting create` command. */
 export type PostSettings = {
   postType: PostType;
-  platforms: Platform[];
   bodyText: string;
   /** `{ filename, altText }[]` */
   fileInfos: FileInfo[];
+};
+
+/**
+ * User-generated post settings. Normally, it comes from `posting create` command.
+ */
+export type PostsSettings = {
+  platforms: Platform[];
+  posts: PostSettings[];
 };
