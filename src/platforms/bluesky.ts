@@ -127,11 +127,7 @@ export async function uploadBluesky(
   }
 }
 
-export async function getBlueskyStats(
-  envVars: EnvVars,
-  agent: BskyAgent,
-  userConfig: Config,
-) {
+export async function getBlueskyStats(envVars: EnvVars, agent: BskyAgent) {
   if (envVars.blueskyHandle) {
     try {
       const authorFeed = await agent.getAuthorFeed({
@@ -196,18 +192,3 @@ export async function getBlueskyStats(
     }
   }
 }
-
-// function convertDataURIToUint8Array(dataURI: string) {
-//   // Strip off the data URI scheme and get the base64 string
-//   const base64 = dataURI.split(",")[1];
-//   // Decode the base64 string
-//   // const binaryString = Buffer.from(base64, "base64").toString("binary");
-//   const binaryString = atob(base64);
-//
-//   // Convert the binary string to a Uint8Array
-//   const bytes = new Uint8Array(binaryString.length);
-//   for (let i = 0; i < binaryString.length; i++) {
-//     bytes[i] = binaryString.charCodeAt(i);
-//   }
-//   return bytes;
-// }

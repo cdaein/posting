@@ -20,6 +20,7 @@ const envVars: EnvVars = {
   //
   blueskyEmail: process.env.BLUESKY_EMAIL,
   blueskyPassword: process.env.BLUESKY_PASSWORD,
+  blueskyHandle: process.env.BLUESKY_HANDLE,
   //
   firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET!,
   firebaseApiKey: process.env.FIREBASE_API_KEY!,

@@ -61,7 +61,7 @@ export function initWatchCommand(
 
             if (blueskyAgent) {
               try {
-                await getBlueskyStats(envVars, blueskyAgent, userConfig);
+                await getBlueskyStats(envVars, blueskyAgent);
               } catch (e: unknown) {
                 e instanceof Error && console.error(e.message);
               }
