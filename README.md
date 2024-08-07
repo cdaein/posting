@@ -14,7 +14,7 @@ https://github.com/user-attachments/assets/30dd1525-bc9b-446d-bddc-7bbfb361fb5f
 
 ### `posting setup`
 
-Run `posting setup` to set up envrionment variables such as API keys. Your API credentials are locally stored in `.env` file of the project's install directory and only used for each platform's API authentication. Run the script again to update any details.
+Run `posting setup` to set up envrionment variables such as API keys. This has to be set up before you can schedule and automate any posting. Your API credentials are locally stored in the `.env` file of the project's install directory and only used for each platform's API authentication. Run the script again to update any details.
 
 ### `posting create`
 
