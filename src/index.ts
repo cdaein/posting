@@ -1,15 +1,15 @@
 import { program } from "commander";
 import dotenv from "dotenv";
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { description, version } from "../package.json";
-import { initCreateCommand, initWatchCommand } from "./commands";
 import { defaultConfig } from "./constants";
 import { EnvVars } from "./types";
 import { loadConfig, resolvePath } from "./utils";
 import figlet from "figlet";
 import { initSetupCommand } from "./commands/setup";
+import { initCreateCommand } from "./commands/create";
+import { initWatchCommand } from "./commands/watch";
 
 // access .env from anywhere (when calling as global command)
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
