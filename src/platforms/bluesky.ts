@@ -3,7 +3,7 @@ import kleur from "kleur";
 import mime from "mime-types";
 import fs from "node:fs";
 import path from "node:path";
-import { Config, EnvVars, PostSettings } from "../types";
+import { Config, EnvVars, PostSettings, PostsSettings } from "../types";
 import { getDiffStat } from "../utils";
 
 export type ImageRecord = {
@@ -67,64 +67,84 @@ export async function initBlueskyAgent(envVars: EnvVars) {
 export async function uploadBluesky(
   agent: BskyAgent,
   folderPath: string,
-  settings: PostSettings,
+  settings: PostsSettings,
   dev: boolean,
 ) {
-  const { postType, bodyText, fileInfos } = settings;
-
   if (dev) {
-    return { url: "DEV MODE BLUESKY" };
+    return { uri: "DEV MODE BLUESKY", cid: "CID" };
   }
 
-  const rt = new RichText({ text: bodyText });
-  await rt.detectFacets(agent); // automatically detects mentions and links
+  const statuses: {
+    uri: string;
+    cid: string;
+  }[] = [];
 
-  // https://docs.bsky.app/docs/tutorials/creating-a-post#images-embeds
-  const images: ImageRecord[] = [];
-  for (const fileInfo of fileInfos) {
-    const { filename, altText } = fileInfo;
-    const localFilePath = path.join(folderPath, filename);
-    const buffer = fs.readFileSync(localFilePath);
-    const mimeType = mime.lookup(localFilePath) as string;
+  const { posts } = settings;
+
+  for (let i = 0; i < posts.length; i++) {
+    const post = posts[i];
+    const { bodyText, fileInfos } = post;
+
+    const rt = new RichText({ text: bodyText });
+    await rt.detectFacets(agent); // automatically detects mentions and links
+
+    // https://docs.bsky.app/docs/tutorials/creating-a-post#images-embeds
+    const images: ImageRecord[] = [];
+    for (const fileInfo of fileInfos) {
+      const { filename, altText } = fileInfo;
+      const localFilePath = path.join(folderPath, filename);
+      const buffer = fs.readFileSync(localFilePath);
+      const mimeType = mime.lookup(localFilePath) as string;
+      try {
+        console.log(`Uploading file ${yellow(filename)}`);
+        const { data } = await agent.uploadBlob(buffer, {
+          encoding: mimeType,
+        });
+        images.push({
+          alt: altText || "",
+          image: data.blob,
+        });
+        console.log(`Uploaded file`);
+      } catch (e) {
+        console.error(e);
+        throw new Error(`Error uploading media to Bluesky \n${e}`);
+      }
+    }
+
+    const postRecord = {
+      $type: "app.bsky.feed.post",
+      text: rt.text,
+      facets: rt.facets,
+      ...(fileInfos.length > 0
+        ? {
+            embed: {
+              $type: "app.bsky.embed.images",
+              images,
+            },
+          }
+        : {}),
+      ...(i !== 0
+        ? {
+            reply: {
+              root: statuses[0],
+              parent: statuses[i - 1],
+            },
+          }
+        : {}),
+      createdAt: new Date().toISOString(),
+    };
+
     try {
-      console.log(`Uploading file ${yellow(filename)}`);
-      const { data } = await agent.uploadBlob(buffer, {
-        encoding: mimeType,
-      });
-      images.push({
-        alt: altText || "",
-        image: data.blob,
-      });
-      console.log(`Uploaded file`);
+      console.log(`Publishing on ${bold("Bluesky")}..`);
+      const status = await agent.post(postRecord);
+      statuses.push(status);
+      console.log(`Published on ${bold("Bluesky")}. uri: ${green(status.uri)}`);
     } catch (e) {
-      console.error(e);
-      throw new Error(`Error uploading media to Bluesky \n${e}`);
+      throw new Error(`Error publishing on Bluesky \n${e}`);
     }
   }
 
-  const postRecord = {
-    $type: "app.bsky.feed.post",
-    text: rt.text,
-    facets: rt.facets,
-    ...(fileInfos.length > 0
-      ? {
-          embed: {
-            $type: "app.bsky.embed.images",
-            images,
-          },
-        }
-      : {}),
-    createdAt: new Date().toISOString(),
-  };
-
-  try {
-    console.log(`Publishing on ${bold("Bluesky")}..`);
-    const status = await agent.post(postRecord);
-    console.log(`Published on ${bold("Bluesky")}. uri: ${green(status.uri)}`);
-    return status;
-  } catch (e) {
-    throw new Error(`Error publishing on Bluesky \n${e}`);
-  }
+  return statuses;
 }
 
 export async function getBlueskyStats(envVars: EnvVars, agent: BskyAgent) {
