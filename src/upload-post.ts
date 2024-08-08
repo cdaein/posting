@@ -1,5 +1,5 @@
 import { BskyAgent } from "@atproto/api";
-import { deleteObject, StorageReference } from "firebase/storage";
+import { deleteObject } from "firebase/storage";
 import kleur from "kleur";
 import { mastodon } from "masto";
 import fs from "node:fs";
@@ -35,24 +35,29 @@ import { uploadInstagram } from "./platforms/instagram";
 import { uploadMastodon } from "./platforms/mastodon";
 import { uploadThreads } from "./platforms/threads";
 import { uploadTwitter } from "./platforms/twitter";
-import { initFirebase, uploadFirebase } from "./storages/firebase";
-import { EnvVars, Platform, PostSettings } from "./types";
+import {
+  FirebaseFileInfo,
+  initFirebase,
+  uploadFirebase,
+} from "./storages/firebase";
+import { EnvVars, Platform, PostSettings, PostsSettings } from "./types";
 import { waitForFile } from "./utils";
 
 const { bold, yellow } = kleur;
 
 export async function isPostValid(
   postFolderPath: string,
+  platforms: Platform[],
   settings: PostSettings,
 ) {
   // TODO: media metadata (dimensions, filesize, etc.)
   return (
-    isPlatformsValid(settings) &&
+    isPlatformsValid(platforms) &&
     isPostTypeValid(settings) &&
     isBodyTextValid(settings) &&
-    (await isFilesValid(postFolderPath, settings)) &&
-    isFileFormatsValid(settings) &&
-    isCharCountValid(settings)
+    (await isFilesValid(postFolderPath, platforms, settings)) &&
+    isFileFormatsValid(platforms, settings) &&
+    isCharCountValid(platforms, settings)
   );
 }
 
@@ -62,7 +67,7 @@ export async function readSettings(postFolderPath: string) {
   await waitForFile(settingsPath, 10000, 1000);
 
   // read and parse settings.json
-  const settings: PostSettings = JSON.parse(
+  const settings: PostsSettings = JSON.parse(
     fs.readFileSync(settingsPath, "utf8"),
   );
   return settings;
@@ -87,32 +92,34 @@ export async function uploadPost(
   postFolderPath: string,
   dev: boolean,
 ) {
-  const firebaseFileInfos: {
-    storageRef: StorageReference;
-    downloadUrl: string;
-  }[] = [];
+  // 2d array to support reply thread
+  // due to having to delete when error, this needs to be outside of try/catch
+  const firebaseFileInfos: FirebaseFileInfo[][] = [];
 
   try {
     const settings = await readSettings(postFolderPath);
 
-    if (!(await isPostValid(postFolderPath, settings))) {
-      throw new Error(`Found problem with post folder in ${postFolderPath}`);
-    }
+    const { platforms, posts } = settings;
 
-    const { postType, platforms, bodyText, fileInfos } = settings;
+    for (const post of posts) {
+      if (!(await isPostValid(postFolderPath, platforms, post))) {
+        throw new Error(`Found problem with post folder in ${postFolderPath}`);
+      }
+    }
 
     console.log("===============");
     console.log(`Processing ${bold(path.basename(postFolderPath))}`);
     console.log(`Current time: ${bold(new Date().toLocaleString())}`);
-    console.log(`Post type: ${postType}`);
     console.log(`Platforms: ${platforms.join(",")}`);
-    console.log(`Text: ${bodyText}`);
-    if (fileInfos.length > 0) {
-      console.log(`Files:`);
-      for (const fileInfo of fileInfos) {
-        console.log(`- ${fileInfo.filename}`);
-      }
-    }
+    // TODO: print this for each post in a reply thread
+    // console.log(`Post type: ${postType}`);
+    // console.log(`Text: ${bodyText}`);
+    // if (fileInfos.length > 0) {
+    //   console.log(`Files:`);
+    //   for (const fileInfo of fileInfos) {
+    //     console.log(`- ${fileInfo.filename}`);
+    //   }
+    // }
     console.log("===============");
 
     const { blueskyAgent, mastodonClient, threadsClient, twitterClient } =
@@ -121,27 +128,34 @@ export async function uploadPost(
     // Threads/Instagram both require public URL so set up Firebase here.
     // if something goes wrong with firebase uploads, do not proceed with IG/Threads
     let firebaseReady = false;
-    if (platforms.includes("threads") || platforms.includes("instagram")) {
-      try {
-        const { storage, uid } = await initFirebase(envVars);
-        const { fileInfos } = settings;
-        console.log("Uploading media file(s) to Firebase Storage..");
-        for (let i = 0; i < fileInfos.length; i++) {
-          const { filename } = fileInfos[i];
-          const localFilePath = path.join(postFolderPath, filename);
-          const { storageRef, downloadUrl } = await uploadFirebase(
-            storage,
-            uid,
-            localFilePath,
-          );
-          firebaseFileInfos.push({ storageRef, downloadUrl });
-          console.log(`File uploaded to Firebase: ${yellow(filename)}`);
-        }
 
-        firebaseReady = true;
-      } catch (e) {
-        console.error(e);
+    if (platforms.includes("threads") || platforms.includes("instagram")) {
+      const { posts } = settings;
+      for (let j = 0; j < posts.length; j++) {
+        const post = posts[j];
+
+        firebaseFileInfos.push([]);
+
+        try {
+          const { storage, uid } = await initFirebase(envVars);
+          const { fileInfos } = post;
+          for (let i = 0; i < fileInfos.length; i++) {
+            console.log("Uploading media file(s) to Firebase Storage..");
+            const { filename } = fileInfos[i];
+            const localFilePath = path.join(postFolderPath, filename);
+            const { storageRef, downloadUrl } = await uploadFirebase(
+              storage,
+              uid,
+              localFilePath,
+            );
+            firebaseFileInfos[j].push({ storageRef, downloadUrl });
+            console.log(`File uploaded to Firebase: ${yellow(filename)}`);
+          }
+        } catch (e) {
+          console.error(e);
+        }
       }
+      firebaseReady = true;
     }
 
     for (const platform of platforms) {
@@ -149,7 +163,7 @@ export async function uploadPost(
         console.log(`\t${bold("Bluesky")}`);
         await uploadBluesky(blueskyAgent!, postFolderPath, settings, dev);
       } else if (platform === "instagram" && firebaseReady) {
-        await uploadInstagram(envVars, settings, firebaseFileInfos, dev);
+        // await uploadInstagram(envVars, settings, firebaseFileInfos, dev);
       } else if (platform === "mastodon") {
         console.log(`\t${bold("Mastodon")}`);
         await uploadMastodon(mastodonClient!, postFolderPath, settings, dev);
@@ -163,26 +177,33 @@ export async function uploadPost(
     }
 
     // clean up Firebase Storage after successful use
-    for (const firebaseFileInfo of firebaseFileInfos) {
-      const { storageRef } = firebaseFileInfo;
-      await deleteObject(storageRef);
-      console.log("Deleted temporary media file from Firebase Storage");
+    for (const firebaseFileInfoArr of firebaseFileInfos) {
+      for (const firebaseFileInfo of firebaseFileInfoArr) {
+        const { storageRef } = firebaseFileInfo;
+        await deleteObject(storageRef);
+        console.log("Deleted temporary media file from Firebase Storage");
+      }
     }
 
     return true;
   } catch (e) {
     // clean up when something goes wrong with uploadPost
-    for (const firebaseFileInfo of firebaseFileInfos) {
-      const { storageRef } = firebaseFileInfo;
-      await deleteObject(storageRef);
-      console.log("Deleted temporary media file from Firebase Storage");
+    for (const firebaseFileInfoArr of firebaseFileInfos) {
+      for (const firebaseFileInfo of firebaseFileInfoArr) {
+        const { storageRef } = firebaseFileInfo;
+        await deleteObject(storageRef);
+        console.log("Deleted temporary media file from Firebase Storage");
+      }
     }
     throw new Error(`Error in uploadPost \n${e}`);
   }
 }
 
-export function isCharCountValid(settings: PostSettings) {
-  const { platforms, bodyText } = settings;
+export function isCharCountValid(
+  platforms: Platform[],
+  settings: PostSettings,
+) {
+  const { bodyText } = settings;
   const maxChars = getMaxChars(platforms);
   if (bodyText.length > maxChars) {
     console.error(
@@ -212,8 +233,11 @@ export function getMaxChars(platforms: Platform[]) {
   );
 }
 
-export function isFileFormatsValid(settings: PostSettings) {
-  const { platforms, fileInfos } = settings;
+export function isFileFormatsValid(
+  platforms: Platform[],
+  settings: PostSettings,
+) {
+  const { fileInfos } = settings;
   const commonImageFormats = getCommonImageFormats(platforms);
   const commonVideoFormats = getCommonVideoFormats(platforms);
   const commonFormats = [...commonImageFormats, ...commonVideoFormats];
@@ -276,9 +300,10 @@ export const getCommonFormats = (...lists: string[][]) => {
 
 export async function isFilesValid(
   postFolderPath: string,
+  platforms: Platform[],
   settings: PostSettings,
 ) {
-  const { platforms, postType, fileInfos } = settings;
+  const { postType, fileInfos } = settings;
   if (postType === "media") {
     if (!fileInfos || fileInfos.length === 0) {
       console.error(`fileInfos are required for media post`);
@@ -348,8 +373,7 @@ export function isPostTypeValid(settings: PostSettings) {
   return true;
 }
 
-export function isPlatformsValid(settings: PostSettings) {
-  const { platforms } = settings;
+export function isPlatformsValid(platforms: Platform[]) {
   // 1. length > 0
   if (!platforms || platforms.length === 0) {
     console.error(`Please include platform(s)`);
