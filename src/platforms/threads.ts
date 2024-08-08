@@ -3,7 +3,7 @@ import path from "node:path";
 import { ThreadsClient, ThreadsUserData } from "../clients/threads-client";
 import { THREADS_IMAGE_FORMATS } from "../constants";
 import { FirebaseFileInfo } from "../storages/firebase";
-import { PostSettings } from "../types";
+import { PostsSettings } from "../types";
 import { ensureData, getDiffStat, handleAsync } from "../utils";
 
 export type ThreadsMediaType = "TEXT" | "IMAGE" | "VIDEO" | "CAROUSEL";
@@ -24,6 +24,10 @@ export type ThreadsMediaData = {
 export type ThreadsPublishData = {
   creation_id: string;
   access_token: string;
+};
+
+export type ThreadsStatus = {
+  id: string;
 };
 
 export type ThreadsStats = {
@@ -62,126 +66,160 @@ const { bold, green, yellow } = kleur;
  */
 export async function uploadThreads(
   client: ThreadsClient,
-  settings: PostSettings,
-  firebaseFileInfos: FirebaseFileInfo[],
+  settings: PostsSettings,
+  firebaseFileInfos: FirebaseFileInfo[][],
   dev: boolean,
 ) {
-  const { postType, bodyText, fileInfos } = settings;
-
   if (dev) {
     return "DEV MODE THREADS";
   }
 
-  let publishContainerId = "";
+  const { posts } = settings;
 
-  if (postType === "text") {
-    // 1. text only post
-    const result = await handleAsync(client.createTextContainer(bodyText));
-    const containerId = ensureData(
-      result,
-      "Error creating text container on Threads",
-    );
-    publishContainerId = containerId;
-    await checkContainerStatus(client, containerId);
-  } else {
-    if (fileInfos.length === 1) {
-      // NOTE: Threads *has* alt text, but it's not documented on API..
-      const { filename, altText } = fileInfos[0];
-      // 2. single media post
-      console.log(`Creating a media container for ${yellow(filename)}`);
-      const ext = path.extname(filename).toLowerCase().slice(1);
+  const publishContainerIds: string[] = [];
+  const statuses: ThreadsStatus[] = [];
+
+  // NOTE: if reply thread fails in the middle (happend to me), i want to delete the whole thread,
+  // but stupidly, Threads API doesn't have a way to delete a post.
+  for (let j = 0; j < posts.length; j++) {
+    const post = posts[j];
+    const { postType, bodyText, fileInfos } = post;
+
+    if (postType === "text") {
+      // 1. text only post
       const result = await handleAsync(
-        THREADS_IMAGE_FORMATS.includes(ext)
-          ? client.createImageContainer(
-              firebaseFileInfos[0].downloadUrl,
-              bodyText,
-            )
-          : client.createVideoContainer(
-              firebaseFileInfos[0].downloadUrl,
-              bodyText,
-            ),
+        client.createTextContainer(
+          bodyText,
+          j !== 0 ? { replyToId: statuses[j - 1].id } : {},
+        ),
       );
       const containerId = ensureData(
         result,
-        "Error creating media container on Threads",
+        "Error creating text container on Threads",
       );
-      console.log(`Media container created. id: ${green(containerId)}`);
-      publishContainerId = containerId;
+      publishContainerIds.push(containerId);
       await checkContainerStatus(client, containerId);
     } else {
-      // 3. carousel post
-      const mediaContainerIds: string[] = [];
-      for (let i = 0; i < fileInfos.length; i++) {
-        const { filename, altText } = fileInfos[i];
-        // 3.a. create item container IDs
+      if (fileInfos.length === 1) {
+        // NOTE: Threads *has* alt text, but it's not documented on API..
+        const { filename, altText } = fileInfos[0];
+        // 2. single media post
         console.log(`Creating a media container for ${yellow(filename)}`);
         const ext = path.extname(filename).toLowerCase().slice(1);
         const result = await handleAsync(
           THREADS_IMAGE_FORMATS.includes(ext)
             ? client.createImageContainer(
-                firebaseFileInfos[0].downloadUrl,
-                "",
-                true,
+                firebaseFileInfos[j][0].downloadUrl,
+                bodyText,
+                j !== 0 ? { replyToId: statuses[j - 1].id } : {},
               )
             : client.createVideoContainer(
-                firebaseFileInfos[0].downloadUrl,
-                "",
-                true,
+                firebaseFileInfos[j][0].downloadUrl,
+                bodyText,
+                j !== 0 ? { replyToId: statuses[j - 1].id } : {},
               ),
         );
         const containerId = ensureData(
           result,
-          "Error creating carousel item on Threads",
+          "Error creating media container on Threads",
         );
-        mediaContainerIds.push(containerId);
         console.log(`Media container created. id: ${green(containerId)}`);
-      }
-
-      // TODO: this is blocking - what if later items finish first?
-      // use while loop and run it until all returns "FINISHED",
-      // if any one of them returns "ERROR", throw error.
-      for (const containerId of mediaContainerIds) {
+        publishContainerIds.push(containerId);
         await checkContainerStatus(client, containerId);
+      } else {
+        // 3. carousel post
+        const mediaContainerIds: string[] = [];
+        for (let i = 0; i < fileInfos.length; i++) {
+          const { filename, altText } = fileInfos[i];
+          // 3.a. create item container IDs
+          console.log(`Creating a media container for ${yellow(filename)}`);
+          const ext = path.extname(filename).toLowerCase().slice(1);
+          const result = await handleAsync(
+            THREADS_IMAGE_FORMATS.includes(ext)
+              ? client.createImageContainer(
+                  firebaseFileInfos[j][i].downloadUrl,
+                  "",
+                  {
+                    isCarouselItem: true,
+                    ...(j !== 0 ? { replyToId: statuses[j - 1].id } : {}),
+                  },
+                )
+              : client.createVideoContainer(
+                  firebaseFileInfos[j][i].downloadUrl,
+                  "",
+                  {
+                    isCarouselItem: true,
+                    ...(j !== 0 ? { replyToId: statuses[j - 1].id } : {}),
+                  },
+                ),
+          );
+          const containerId = ensureData(
+            result,
+            "Error creating carousel item on Threads",
+          );
+          mediaContainerIds.push(containerId);
+          console.log(`Media container created. id: ${green(containerId)}`);
+        }
+
+        // TODO: this is blocking - what if later items finish first?
+        // use while loop and run it until all returns "FINISHED",
+        // if any one of them returns "ERROR", throw error.
+        for (const containerId of mediaContainerIds) {
+          await checkContainerStatus(client, containerId);
+        }
+
+        // 3.c. create carousel media container ID
+        console.log(
+          `Creating a carousel container for ${green(mediaContainerIds.join(","))}`,
+        );
+        const result = await handleAsync(
+          client.createCarouselContainer(
+            mediaContainerIds,
+            bodyText,
+            j !== 0 ? { replyToId: statuses[j - 1].id } : {},
+          ),
+        );
+        const carouselContainerID = ensureData(
+          result,
+          "Error creating carousel container on Threads",
+        );
+        publishContainerIds.push(carouselContainerID);
+
+        // media container may not be immedidiately ready to publish. (ie. big files)
+        // per IG API: query a container's status once per minute, for no more than 5 minutes.
+        await checkContainerStatus(client, carouselContainerID);
+
+        console.log(
+          `Carousel container created. id: ${green(carouselContainerID)}`,
+        );
       }
-
-      // 3.c. create carousel media container ID
-      console.log(
-        `Creating a carousel container for ${green(mediaContainerIds.join(","))}`,
-      );
-      const result = await handleAsync(
-        client.createCarouselContainer(mediaContainerIds, bodyText),
-      );
-      const carouselContainerID = ensureData(
-        result,
-        "Error creating carousel container on Threads",
-      );
-      publishContainerId = carouselContainerID;
-
-      // media container may not be immedidiately ready to publish. (ie. big files)
-      // per IG API: query a container's status once per minute, for no more than 5 minutes.
-      await checkContainerStatus(client, carouselContainerID);
-
-      console.log(
-        `Carousel container created. id: ${green(carouselContainerID)}`,
-      );
     }
+
+    console.log(`Publishing on ${bold("Threads")}..`);
+    const statusId = await client
+      .publish(publishContainerIds[j])
+      .then(async (id) => {
+        console.log(`Published on ${bold("Threads")}. id: ${green(id)}`);
+        return id;
+      })
+      .catch((e) => {
+        // console.error(e.response?.data);
+        throw new Error(`Error publishing on Threads \n${e}`);
+      });
+
+    statuses.push({ id: statusId });
   }
-
-  console.log(`Publishing on ${bold("Threads")}..`);
-  const statusId = await client
-    .publish(publishContainerId)
-    .then(async (id) => {
-      console.log(`Published on ${bold("Threads")}. id: ${green(id)}`);
-      return id;
-    })
-    .catch((e) => {
-      // console.error(e.response?.data);
-      throw new Error(`Error publishing on Threads \n${e}`);
-    });
-
-  return statusId;
+  return statuses;
 }
 
+/**
+ * Check the uploaded container status. Used before publishing. Usually, any file takes some seconds before ready,
+ * so there is a 5 second wait before calling API.
+ * @param client - ThreadsClient
+ * @param creationId -
+ * @param maxRetries - default: 10
+ * @param interval -  default: 30 seconds
+ */
 async function checkContainerStatus(
   client: ThreadsClient,
   creationId: string,
@@ -190,8 +228,8 @@ async function checkContainerStatus(
 ) {
   let retries = 0;
 
-  // wait 5 sec before querying container status to reduce API calls.
-  await new Promise((resolve) => setTimeout(resolve, 5000));
+  // wait 3 sec before querying container status to reduce API calls.
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 
   while (retries < maxRetries) {
     try {

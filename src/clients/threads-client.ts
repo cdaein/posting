@@ -98,17 +98,27 @@ export class ThreadsClient {
       .then((res) => res.data.id);
   }
 
-  async createTextContainer(text: string): Promise<string> {
+  async createTextContainer(
+    text: string,
+    opt?: { replyToId?: string },
+  ): Promise<string> {
     const mediaData: ThreadsMediaData = {
       media_type: "TEXT",
       text,
+      ...(opt?.replyToId ? { reply_to_id: opt.replyToId } : {}),
       access_token: this.tokens.accessToken,
     };
 
     return axios
-      .post(`${this.THREADS_API_URL}/${this.tokens.userId}/threads`, null, {
-        params: mediaData,
-      })
+      .post(
+        opt?.replyToId
+          ? `${this.THREADS_API_URL}/me/threads`
+          : `${this.THREADS_API_URL}/${this.tokens.userId}/threads`,
+        null,
+        {
+          params: mediaData,
+        },
+      )
       .then((res) => {
         // return media container ID
         return res.data.id;
@@ -118,20 +128,27 @@ export class ThreadsClient {
   async createImageContainer(
     imageUrl: string,
     text = "",
-    isCarouselItem = false,
+    opt?: { replyToId?: string; isCarouselItem?: boolean },
   ): Promise<string> {
     const mediaData: ThreadsMediaData = {
-      ...(isCarouselItem ? { is_carousel_item: true } : {}),
+      ...(opt?.isCarouselItem ? { is_carousel_item: true } : {}),
       media_type: "IMAGE",
       text,
       image_url: imageUrl,
+      ...(opt?.replyToId ? { reply_to_id: opt.replyToId } : {}),
       access_token: this.tokens.accessToken,
     };
 
     return axios
-      .post(`${this.THREADS_API_URL}/${this.tokens.userId}/threads`, null, {
-        params: mediaData,
-      })
+      .post(
+        opt?.replyToId
+          ? `${this.THREADS_API_URL}/me/threads`
+          : `${this.THREADS_API_URL}/${this.tokens.userId}/threads`,
+        null,
+        {
+          params: mediaData,
+        },
+      )
       .then((res) => {
         // return media container ID
         return res.data.id;
@@ -141,27 +158,38 @@ export class ThreadsClient {
   async createVideoContainer(
     videoUrl: string,
     text = "",
-    isCarouselItem = false,
+    opt?: { replyToId?: string; isCarouselItem?: boolean },
   ): Promise<string> {
     const mediaData: ThreadsMediaData = {
-      ...(isCarouselItem ? { is_carousel_item: true } : {}),
+      ...(opt?.isCarouselItem ? { is_carousel_item: true } : {}),
       media_type: "VIDEO",
       text,
       video_url: videoUrl,
+      ...(opt?.replyToId ? { reply_to_id: opt.replyToId } : {}),
       access_token: this.tokens.accessToken,
     };
 
     return axios
-      .post(`${this.THREADS_API_URL}/${this.tokens.userId}/threads`, null, {
-        params: mediaData,
-      })
+      .post(
+        opt?.replyToId
+          ? `${this.THREADS_API_URL}/me/threads`
+          : `${this.THREADS_API_URL}/${this.tokens.userId}/threads`,
+        null,
+        {
+          params: mediaData,
+        },
+      )
       .then((res) => {
         // return media container ID
         return res.data.id;
       });
   }
 
-  async createCarouselContainer(childrenIds: string[], text = "") {
+  async createCarouselContainer(
+    childrenIds: string[],
+    text = "",
+    opt?: { replyToId?: string },
+  ) {
     if (childrenIds.length > this.MAX_ATTACHMENTS) {
       throw new Error(
         `Attached mediaUrls exceed the maximum of ${this.MAX_ATTACHMENTS}`,
@@ -172,13 +200,20 @@ export class ThreadsClient {
       media_type: "CAROUSEL",
       children: childrenIds.join(","),
       text,
+      ...(opt?.replyToId ? { reply_to_id: opt.replyToId } : {}),
       access_token: this.tokens.accessToken,
     };
 
     return axios
-      .post(`${this.THREADS_API_URL}/${this.tokens.userId}/threads`, null, {
-        params: mediaData,
-      })
+      .post(
+        opt?.replyToId
+          ? `${this.THREADS_API_URL}/me/threads`
+          : `${this.THREADS_API_URL}/${this.tokens.userId}/threads`,
+        null,
+        {
+          params: mediaData,
+        },
+      )
       .then((res) => {
         // return media container ID
         return res.data.id;
