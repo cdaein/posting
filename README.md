@@ -36,8 +36,8 @@ If you pass `posting watch --stats` option, it checks stats (like counts, etc.) 
 
 - Bluesky
   - Go to your account Settings > App Passwords and generate one.
-  - Use your email, app apssword and handle when setting up with `posting setup`.
-  - Bluesky only supports image post.
+  - Use your email, app password and handle when setting up with `posting setup`.
+  - Bluesky doesn't support video.
 - Mastodon
   - Getting API Key is very easy. Just go to your instance, click Preferences > Developement. Create a New Application with read/write access.
 - ~~Instagram~~
