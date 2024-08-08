@@ -45,6 +45,9 @@ export function initCreateCommand(program: Command, watchDir: string) {
       // create a temporary post folder
       // this is for reply thread posts to copy files as they are added.
       // REVIEW: this is more of a temporary solution as I had trouble checking same filename conflicts for reply thread.
+      // ultimately, it'd be best to avoid temporary folder
+      // FIX: what if there's already temp folder with some files?
+      // currently, files keep adding.
       const tempFolderPath = path.join(watchDir, "temp-posting");
       fs.mkdirSync(tempFolderPath, { recursive: true });
 
