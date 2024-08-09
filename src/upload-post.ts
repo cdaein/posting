@@ -349,7 +349,7 @@ export function getMaxAttachments(platforms: Platform[]) {
 
 export function isBodyTextValid(settings: PostSettings) {
   const { postType, bodyText } = settings;
-  if (!bodyText) {
+  if (bodyText === undefined) {
     console.log(`Not found: bodyText field`);
     return false;
   }
