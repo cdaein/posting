@@ -289,7 +289,7 @@ export async function getThreadsStats(client: ThreadsClient) {
   const { likes, replies, reposts, quotes } = diffStats;
 
   console.log(`Latest ${bold("Threads")} (${green(permalink)}) stats`);
-  console.log(`Text: ${text}`);
+  text && console.log(`Text: ${text}`);
   // const viewsStr = `Views: ${green(views)}`;
   const likesStr = likes
     ? `Likes: ${green(getDiffStat(lastStats.likes, likes))}`
