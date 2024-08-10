@@ -182,7 +182,7 @@ export async function getBlueskyStats(envVars: EnvVars, agent: BskyAgent) {
       const { likeCount, repostCount, replyCount } = diffStats;
 
       console.log(`Latest ${bold("Bluesky")} (${green(postUrl)}) stats`);
-      console.log(`Text: ${text}`);
+      text && console.log(`Text: ${text}`);
       // const likes = `Likes: ${green(lastStats.likeCount !== 0 && likeCount >= 0 ? "+" : "" + likeCount.toString())}`;
       // const reposts = `Reblogs: ${green(lastStats.repostCount !== 0 && repostCount >= 0 ? "+" : "" + repostCount.toString())}`;
       // const replies = `Replies: ${green(lastStats.replyCount !== 0 && replyCount >= 0 ? "+" : "" + replyCount.toString())}`;

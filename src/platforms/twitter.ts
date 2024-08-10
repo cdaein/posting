@@ -223,7 +223,7 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
     // URL - https://x.com/[USERNAME]/status/[POST_ID]
     const postUrl = `https://x.com/${username}/status/${id}`;
     console.log(`Latest ${bold("Twitter")} (${green(postUrl)}) stats`);
-    console.log(`Text: ${text}`);
+    text && console.log(`Text: ${text}`);
     const hasUpdates = [likesStr, retweetsStr, replyStr, quotesStr].some(
       (str) => str.length > 0,
     );
