@@ -79,7 +79,7 @@ export async function readSettings(postFolderPath: string) {
  * @param postFolderPath - Folder where post is in (image, video, settings.json)
  * @param userConfig -
  * @param dev - A flag to enable dev mode
- * @returns `true` if uploaded
+ * @returns uploaded states of each platform as boolean
  */
 export async function uploadPost(
   envVars: EnvVars,
@@ -125,6 +125,13 @@ export async function uploadPost(
     const { blueskyAgent, mastodonClient, threadsClient, twitterClient } =
       clients;
 
+    const uploaded = {
+      bluesky: false,
+      mastodon: false,
+      threads: false,
+      twitter: false,
+    };
+
     // Threads/Instagram both require public URL so set up Firebase here.
     // if something goes wrong with firebase uploads, do not proceed with IG/Threads
     let firebaseReady = false;
@@ -162,17 +169,21 @@ export async function uploadPost(
       if (platform === "bluesky") {
         console.log(`\t${bold("Bluesky")}`);
         await uploadBluesky(blueskyAgent!, postFolderPath, settings, dev);
+        uploaded.bluesky = true;
       } else if (platform === "instagram" && firebaseReady) {
         // await uploadInstagram(envVars, settings, firebaseFileInfos, dev);
       } else if (platform === "mastodon") {
         console.log(`\t${bold("Mastodon")}`);
         await uploadMastodon(mastodonClient!, postFolderPath, settings, dev);
+        uploaded.mastodon = true;
       } else if (platform === "threads" && firebaseReady) {
         console.log(`\t${bold("Threads")}`);
         await uploadThreads(threadsClient!, settings, firebaseFileInfos, dev);
+        uploaded.threads = true;
       } else if (platform === "twitter") {
         console.log(`\t${bold("Twitter")}`);
         await uploadTwitter(twitterClient!, postFolderPath, settings, dev);
+        uploaded.twitter = true;
       }
     }
 
@@ -185,7 +196,7 @@ export async function uploadPost(
       }
     }
 
-    return true;
+    return uploaded;
   } catch (e) {
     // clean up when something goes wrong with uploadPost
     for (const firebaseFileInfoArr of firebaseFileInfos) {

@@ -31,19 +31,19 @@ export type ThreadsStatus = {
 };
 
 export type ThreadsStats = {
-  views: number;
-  likes: number;
-  replies: number;
-  reposts: number;
-  quotes: number;
+  views: number | null;
+  likes: number | null;
+  replies: number | null;
+  reposts: number | null;
+  quotes: number | null;
 };
 
-const lastStats: Record<keyof ThreadsStats, number | undefined> = {
-  views: undefined,
-  likes: undefined,
-  replies: undefined,
-  reposts: undefined,
-  quotes: undefined,
+export const threadsLastStats: ThreadsStats = {
+  views: null,
+  likes: null,
+  replies: null,
+  reposts: null,
+  quotes: null,
 };
 
 const diffStats: ThreadsStats = {
@@ -258,7 +258,10 @@ async function checkContainerStatus(
 }
 
 // https://developers.facebook.com/docs/threads/insights
-export async function getThreadsStats(client: ThreadsClient) {
+export async function getThreadsStats(
+  client: ThreadsClient,
+  lastStats: ThreadsStats,
+) {
   const userDataResult = await handleAsync<ThreadsUserData[]>(
     client.getUserData(1),
   );
@@ -279,7 +282,7 @@ export async function getThreadsStats(client: ThreadsClient) {
 
   const keys = Object.keys(diffStats) as (keyof ThreadsStats)[];
   for (const key of keys) {
-    if (lastStats[key]) {
+    if (curStats[key] && lastStats[key]) {
       diffStats[key] = curStats[key] - lastStats[key];
     } else {
       diffStats[key] = curStats[key];

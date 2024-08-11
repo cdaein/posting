@@ -11,15 +11,15 @@ interface MediaAttachment {
 }
 
 export type MastodonStats = {
-  faves: number;
-  reblogs: number;
-  replies: number;
+  faves: number | null;
+  reblogs: number | null;
+  replies: number | null;
 };
 
-const lastStats: Record<keyof MastodonStats, number | undefined> = {
-  faves: undefined,
-  reblogs: undefined,
-  replies: undefined,
+export const mastodonLastStats: MastodonStats = {
+  faves: null,
+  reblogs: null,
+  replies: null,
 };
 
 const diffStats: MastodonStats = {
@@ -104,7 +104,10 @@ export async function uploadMastodon(
   return statuses;
 }
 
-export async function getMastodonStats(client: mastodon.rest.Client) {
+export async function getMastodonStats(
+  client: mastodon.rest.Client,
+  lastStats: MastodonStats,
+) {
   try {
     const { id: userId } = await client.v1.accounts.verifyCredentials();
     const statuses = await client.v1.accounts
@@ -122,7 +125,7 @@ export async function getMastodonStats(client: mastodon.rest.Client) {
 
     const keys = Object.keys(diffStats) as (keyof MastodonStats)[];
     for (const key of keys) {
-      if (lastStats[key]) {
+      if (curStats[key] && lastStats[key]) {
         diffStats[key] = curStats[key] - lastStats[key];
       } else {
         diffStats[key] = curStats[key];

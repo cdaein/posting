@@ -16,9 +16,9 @@ export type ImageRecord = {
 };
 
 export type BlueskyStats = {
-  likeCount: number;
-  replyCount: number;
-  repostCount: number;
+  likeCount: number | null;
+  replyCount: number | null;
+  repostCount: number | null;
 };
 
 export type BlueskyPostResponse = {
@@ -32,10 +32,11 @@ export type BlueskyPostResponse = {
 
 const { bold, green, yellow } = kleur;
 
-const lastStats: Record<keyof BlueskyStats, number | undefined> = {
-  likeCount: undefined,
-  replyCount: undefined,
-  repostCount: undefined,
+// export only; don't use it in functions here.
+export const blueskyLastStats: BlueskyStats = {
+  likeCount: null,
+  replyCount: null,
+  repostCount: null,
 };
 
 const diffStats: BlueskyStats = {
@@ -147,7 +148,11 @@ export async function uploadBluesky(
   return statuses;
 }
 
-export async function getBlueskyStats(envVars: EnvVars, agent: BskyAgent) {
+export async function getBlueskyStats(
+  envVars: EnvVars,
+  agent: BskyAgent,
+  lastStats: BlueskyStats,
+) {
   if (envVars.blueskyHandle) {
     try {
       const authorFeed = await agent.getAuthorFeed({
@@ -172,7 +177,7 @@ export async function getBlueskyStats(envVars: EnvVars, agent: BskyAgent) {
 
       const keys = Object.keys(diffStats) as (keyof BlueskyStats)[];
       for (const key of keys) {
-        if (lastStats[key]) {
+        if (curStats[key] && lastStats[key]) {
           diffStats[key] = curStats[key] - lastStats[key];
         } else {
           diffStats[key] = curStats[key];

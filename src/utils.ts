@@ -7,8 +7,11 @@ import kleur from "kleur";
 
 const { yellow } = kleur;
 
-export const getDiffStat = (prev: number | undefined, diff: number) => {
-  return (prev !== undefined && diff >= 0 ? "+" : "") + diff.toString();
+export const getDiffStat = (prev: number | null, diff: number) => {
+  return (
+    (prev !== undefined && prev !== null && diff >= 0 ? "+" : "") +
+    diff.toString()
+  );
 };
 
 /**

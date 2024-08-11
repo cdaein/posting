@@ -6,15 +6,41 @@ import fs from "node:fs";
 import path from "path";
 import { initThreadsClient } from "../clients/threads-client";
 import { TIME_FUTURE_THRESHOLD, TIME_PAST_THRESHOLD } from "../constants";
-import { getBlueskyStats, initBlueskyAgent } from "../platforms/bluesky";
-import { getMastodonStats, initMastodonClient } from "../platforms/mastodon";
-import { getThreadsStats } from "../platforms/threads";
-import { getTwitterStats, initTwitterClient } from "../platforms/twitter";
+import {
+  blueskyLastStats,
+  BlueskyStats,
+  getBlueskyStats,
+  initBlueskyAgent,
+} from "../platforms/bluesky";
+import {
+  getMastodonStats,
+  initMastodonClient,
+  mastodonLastStats,
+  MastodonStats,
+} from "../platforms/mastodon";
+import {
+  getThreadsStats,
+  threadsLastStats,
+  ThreadsStats,
+} from "../platforms/threads";
+import {
+  getTwitterStats,
+  initTwitterClient,
+  twitterLastStats,
+  TwitterStats,
+} from "../platforms/twitter";
 import { processFolder } from "../process-folder";
 import { Config, EnvVars } from "../types";
 import { uploadPost } from "../upload-post";
 import { versionUpPath } from "../utils";
 import { watchStart } from "../watcher";
+
+export interface LastStats {
+  bluesky: Record<keyof BlueskyStats, number | null>;
+  mastodon: Record<keyof MastodonStats, number | null>;
+  threads: Record<keyof ThreadsStats, number | null>;
+  twitter: Record<keyof TwitterStats, number | null>;
+}
 
 const { bold, yellow } = kleur;
 
@@ -47,6 +73,15 @@ export function initWatchCommand(
       const threadsClient = initThreadsClient(envVars);
       const twitterClient = initTwitterClient(envVars);
 
+      // initialize last stats
+      // mainly to get keys from each platform
+      const lastStats: LastStats = {
+        bluesky: blueskyLastStats,
+        mastodon: mastodonLastStats,
+        threads: threadsLastStats,
+        twitter: twitterLastStats,
+      };
+
       // check stats
       if (opts.stats) {
         console.log(`Will check stats every hour between 6am and midnight.`);
@@ -61,28 +96,28 @@ export function initWatchCommand(
 
             if (blueskyAgent) {
               try {
-                await getBlueskyStats(envVars, blueskyAgent);
+                await getBlueskyStats(envVars, blueskyAgent, lastStats.bluesky);
               } catch (e: unknown) {
-                e instanceof Error && console.error(e.message);
-              }
-            }
-            if (threadsClient) {
-              try {
-                await getThreadsStats(threadsClient);
-              } catch (e) {
                 e instanceof Error && console.error(e.message);
               }
             }
             if (mastodonClient) {
               try {
-                await getMastodonStats(mastodonClient);
+                await getMastodonStats(mastodonClient, lastStats.mastodon);
+              } catch (e) {
+                e instanceof Error && console.error(e.message);
+              }
+            }
+            if (threadsClient) {
+              try {
+                await getThreadsStats(threadsClient, lastStats.threads);
               } catch (e) {
                 e instanceof Error && console.error(e.message);
               }
             }
             if (twitterClient) {
               try {
-                await getTwitterStats(twitterClient);
+                await getTwitterStats(twitterClient, lastStats.twitter);
               } catch (e) {
                 e instanceof Error && console.error(e.message);
               }
@@ -101,7 +136,20 @@ export function initWatchCommand(
             folderPath,
             opts.dev,
           )
-            .then(async () => {
+            .then(async (uploaded) => {
+              // reset last stats after each upload per platform
+              // REVIEW: test before git push
+              // - for test, watch should be running at least 1+ hour after uploading a new post.
+              for (const key in lastStats) {
+                const platformStats = lastStats[key as keyof LastStats];
+                if (uploaded[key as keyof LastStats]) {
+                  for (const statKey in platformStats) {
+                    (platformStats as Record<string, number | null>)[statKey] =
+                      null;
+                  }
+                }
+              }
+
               // move the published folder to _published
               const publishedFolderPath = path.join(watchDir, "_published");
               if (!fs.existsSync(publishedFolderPath)) {

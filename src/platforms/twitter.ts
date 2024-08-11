@@ -42,21 +42,21 @@ type MostRecentTweetStats = {
 };
 
 export type TwitterStats = {
-  likes: number;
-  retweets: number;
-  replies: number;
-  quotes: number;
-  bookmarks: number;
+  likes: number | null;
+  retweets: number | null;
+  replies: number | null;
+  quotes: number | null;
+  bookmarks: number | null;
 };
 
 const { bold, green, yellow } = kleur;
 
-const lastStats: Record<keyof TwitterStats, number | undefined> = {
-  likes: undefined,
-  retweets: undefined,
-  replies: undefined,
-  quotes: undefined,
-  bookmarks: undefined,
+export const twitterLastStats: TwitterStats = {
+  likes: null,
+  retweets: null,
+  replies: null,
+  quotes: null,
+  bookmarks: null,
 };
 
 const diffStats: TwitterStats = {
@@ -159,7 +159,10 @@ export async function uploadTwitter(
  * 25 req per 24 hours
  * @param client -
  */
-export async function getTwitterStats(client: TwitterApiReadWrite) {
+export async function getTwitterStats(
+  client: TwitterApiReadWrite,
+  lastStats: TwitterStats,
+) {
   try {
     // simple user query (this works; good for testing auth)
     // const user = await client.currentUserV2();
@@ -195,10 +198,11 @@ export async function getTwitterStats(client: TwitterApiReadWrite) {
 
     const keys = Object.keys(diffStats) as (keyof TwitterStats)[];
     for (const key of keys) {
-      if (lastStats[key] === undefined) {
+      // REVIEW: condition is different from other platforms
+      if (lastStats[key] === null) {
         diffStats[key] = curStats[key];
       } else {
-        diffStats[key] = curStats[key] - lastStats[key];
+        diffStats[key] = curStats[key]! - lastStats[key];
       }
     }
 
