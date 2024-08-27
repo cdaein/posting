@@ -56,7 +56,6 @@ export async function initBlueskyAgent(envVars: EnvVars) {
         identifier: envVars.blueskyEmail,
         password: envVars.blueskyPassword,
       });
-
       return agent;
     } catch (e) {
       throw new Error(`Bluesky log in failed`);

@@ -34,6 +34,7 @@ import { Config, EnvVars } from "../types";
 import { uploadPost } from "../upload-post";
 import { versionUpPath } from "../utils";
 import { watchStart } from "../watcher";
+import { BskyAgent } from "@atproto/api";
 
 export interface LastStats {
   bluesky: Record<keyof BlueskyStats, number | null>;
@@ -68,7 +69,12 @@ export function initWatchCommand(
 
       console.log(`Watching ${yellow(watchDir)}`);
 
-      const blueskyAgent = await initBlueskyAgent(envVars);
+      let blueskyAgent: BskyAgent | undefined;
+      try {
+        blueskyAgent = await initBlueskyAgent(envVars);
+      } catch (e) {
+        console.error(e);
+      }
       const mastodonClient = initMastodonClient(envVars);
       const threadsClient = initThreadsClient(envVars);
       const twitterClient = initTwitterClient(envVars);
