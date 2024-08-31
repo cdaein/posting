@@ -97,6 +97,7 @@ export async function uploadInstagram(
             {},
           ),
     );
+
     const containerId = ensureData(
       result,
       "Error creating media container on Instagram",
@@ -185,7 +186,7 @@ export async function uploadInstagram(
 
 /**
  * Check the uploaded container status. Used before publishing. Usually, any file takes some seconds before ready,
- * so there is a 5 second wait before calling API.
+ * so there is a 8 second default wait before calling API.
  * @param client - InstagramClient
  * @param creationId -
  * @param maxRetries - default: 10
@@ -199,8 +200,8 @@ async function checkContainerStatus(
 ) {
   let retries = 0;
 
-  // wait 3 sec before querying container status to reduce API calls.
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  // wait 8 sec before querying container status to reduce API calls.
+  await new Promise((resolve) => setTimeout(resolve, 8000));
 
   while (retries < maxRetries) {
     try {
