@@ -12,7 +12,7 @@ export type InstagramTokens = {
 // NOTE: returned media type of REELS is VIDEO
 // - returned media type of STORIES is IMAGE/VIDEO
 // - use media_product_type instead.
-export type InstagramMediaType = "REELS" | "STORIES" | "VIDEO" | "CAROUSEL";
+export type InstagramMediaType = "REELS" | "STORIES" | "CAROUSEL";
 
 export type InstagramMediaData = {
   is_carousel_item?: boolean;
@@ -141,7 +141,7 @@ export class InstagramClient {
   ): Promise<string> {
     const mediaData: InstagramMediaData = {
       ...(opt?.isCarouselItem ? { is_carousel_item: true } : {}),
-      media_type: "VIDEO",
+      media_type: "REELS",
       caption,
       video_url: videoUrl,
       access_token: this.tokens.accessToken,
@@ -188,7 +188,7 @@ export class InstagramClient {
    * @returns
    */
   async checkContainerStatus(creationId: string): Promise<{
-    status: InstagramContainerStatus;
+    status_code: InstagramContainerStatus;
     error_message: string;
     id: string;
   }> {
