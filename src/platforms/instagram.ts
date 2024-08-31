@@ -204,14 +204,14 @@ async function checkContainerStatus(
 
   while (retries < maxRetries) {
     try {
-      const { status, error_message, id } =
+      const { status_code, error_message, id } =
         await client.checkContainerStatus(creationId);
-      console.log(`Container status: ${status} (try ${retries + 1})`);
+      console.log(`Container status: ${status_code} (try ${retries + 1})`);
 
-      if (status === "FINISHED") {
+      if (status_code === "FINISHED") {
         console.log(`${green(creationId)} is ready to publish.`);
         return "FINISHED";
-      } else if (status === "ERROR") {
+      } else if (status_code === "ERROR") {
         console.error(`Media container failed: ${error_message}`);
         throw new Error(error_message);
       }
