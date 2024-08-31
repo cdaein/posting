@@ -1,9 +1,11 @@
+import { BskyAgent } from "@atproto/api";
 import async from "async";
 import { Command } from "commander";
 import { CronJob } from "cron";
 import kleur from "kleur";
 import fs from "node:fs";
 import path from "path";
+import { initInstagramClient } from "../clients/instagram-client";
 import { initThreadsClient } from "../clients/threads-client";
 import { TIME_FUTURE_THRESHOLD, TIME_PAST_THRESHOLD } from "../constants";
 import {
@@ -12,6 +14,7 @@ import {
   getBlueskyStats,
   initBlueskyAgent,
 } from "../platforms/bluesky";
+import { instagramLastStats, InstagramStats } from "../platforms/instagram";
 import {
   getMastodonStats,
   initMastodonClient,
@@ -34,10 +37,10 @@ import { Config, EnvVars } from "../types";
 import { uploadPost } from "../upload-post";
 import { versionUpPath } from "../utils";
 import { watchStart } from "../watcher";
-import { BskyAgent } from "@atproto/api";
 
 export interface LastStats {
   bluesky: Record<keyof BlueskyStats, number | null>;
+  instagram: Record<keyof InstagramStats, number | null>;
   mastodon: Record<keyof MastodonStats, number | null>;
   threads: Record<keyof ThreadsStats, number | null>;
   twitter: Record<keyof TwitterStats, number | null>;
@@ -75,6 +78,7 @@ export function initWatchCommand(
       } catch (e) {
         console.error(e);
       }
+      const instagramClient = initInstagramClient(envVars);
       const mastodonClient = initMastodonClient(envVars);
       const threadsClient = initThreadsClient(envVars);
       const twitterClient = initTwitterClient(envVars);
@@ -83,6 +87,7 @@ export function initWatchCommand(
       // mainly to get keys from each platform
       const lastStats: LastStats = {
         bluesky: blueskyLastStats,
+        instagram: instagramLastStats,
         mastodon: mastodonLastStats,
         threads: threadsLastStats,
         twitter: twitterLastStats,
@@ -106,6 +111,14 @@ export function initWatchCommand(
               } catch (e: unknown) {
                 e instanceof Error && console.error(e.message);
               }
+            }
+            if (instagramClient) {
+              // TODO:
+              // try {
+              //   await getInstagramStats(instagramClient, lastStats.instagram);
+              // } catch (e) {
+              //   e instanceof Error && console.error(e.message);
+              // }
             }
             if (mastodonClient) {
               try {
@@ -138,7 +151,13 @@ export function initWatchCommand(
           console.log(`Added to queue ${yellow(folderPath)}`);
           uploadPost(
             envVars,
-            { blueskyAgent, mastodonClient, threadsClient, twitterClient },
+            {
+              blueskyAgent,
+              instagramClient,
+              mastodonClient,
+              threadsClient,
+              twitterClient,
+            },
             folderPath,
             opts.dev,
           )

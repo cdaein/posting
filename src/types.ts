@@ -9,8 +9,10 @@ export type EnvVars = {
   firebaseEmail: string;
   firebasePassword: string;
   //
-  instagramUserId: string;
-  instagramAccessToken: string;
+  instagramAppId?: string;
+  instagramAppSecret?: string;
+  instagramUserId?: string;
+  instagramAccessToken?: string;
   //
   mastodonInstanceUrl?: string;
   mastodonAccessToken?: string;

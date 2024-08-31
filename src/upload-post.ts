@@ -5,6 +5,7 @@ import { mastodon } from "masto";
 import fs from "node:fs";
 import path from "path";
 import { TwitterApiReadWrite } from "twitter-api-v2";
+import { InstagramClient } from "./clients/instagram-client";
 import { ThreadsClient } from "./clients/threads-client";
 import {
   BLUESKY_IMAGE_FORMATS,
@@ -85,6 +86,7 @@ export async function uploadPost(
   envVars: EnvVars,
   clients: {
     blueskyAgent?: BskyAgent;
+    instagramClient?: InstagramClient;
     mastodonClient?: mastodon.rest.Client;
     threadsClient?: ThreadsClient;
     twitterClient?: TwitterApiReadWrite;
@@ -122,11 +124,17 @@ export async function uploadPost(
     // }
     console.log("===============");
 
-    const { blueskyAgent, mastodonClient, threadsClient, twitterClient } =
-      clients;
+    const {
+      blueskyAgent,
+      instagramClient,
+      mastodonClient,
+      threadsClient,
+      twitterClient,
+    } = clients;
 
     const uploaded = {
       bluesky: false,
+      instagram: false,
       mastodon: false,
       threads: false,
       twitter: false,
@@ -171,7 +179,12 @@ export async function uploadPost(
         await uploadBluesky(blueskyAgent!, postFolderPath, settings, dev);
         uploaded.bluesky = true;
       } else if (platform === "instagram" && firebaseReady) {
-        // await uploadInstagram(envVars, settings, firebaseFileInfos, dev);
+        await uploadInstagram(
+          instagramClient!,
+          settings,
+          firebaseFileInfos,
+          dev,
+        );
       } else if (platform === "mastodon") {
         console.log(`\t${bold("Mastodon")}`);
         await uploadMastodon(mastodonClient!, postFolderPath, settings, dev);

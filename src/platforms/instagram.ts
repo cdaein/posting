@@ -1,13 +1,13 @@
-import axios from "axios";
 import kleur from "kleur";
 import path from "node:path";
 import {
-  INSTAGRAM_API_URL,
-  INSTAGRAM_IMAGE_FORMATS,
-  INSTAGRAM_VIDEO_FORMATS,
-} from "../constants";
+  InstagramClient,
+  InstagramUserData,
+} from "../clients/instagram-client";
+import { INSTAGRAM_IMAGE_FORMATS } from "../constants";
 import { FirebaseFileInfo } from "../storages/firebase";
-import { EnvVars, PostSettings } from "../types";
+import { PostsSettings } from "../types";
+import { ensureData, getDiffStat, handleAsync } from "../utils";
 
 export type InstagramMediaType = "REELS" | "VIDEO" | "CAROUSEL";
 
@@ -16,16 +16,37 @@ export type InstagramMediaData = {
   /** REELS for a single video post. VIDEO for carousel video item */
   media_type?: InstagramMediaType;
   children?: string;
+  /** text content */
   caption?: string;
-  /** must be a public URL */
   image_url?: string;
-  /** for REELS only. must be a public URL */
   video_url?: string;
   /** long-lived access token */
   access_token: string;
 };
 
-type InstagramPublishData = {
+export type InstagramStatus = {
+  id: string;
+};
+
+export type InstagramStats = {
+  engagement: number | null;
+  impressions: number | null;
+  reach: number | null;
+};
+
+export const instagramLastStats: InstagramStats = {
+  engagement: null,
+  impressions: null,
+  reach: null,
+};
+
+const diffStats: InstagramStats = {
+  engagement: 0,
+  impressions: 0,
+  reach: 0,
+};
+
+export type InstagramPublishData = {
   creation_id: string;
   access_token: string;
 };
@@ -34,19 +55,23 @@ const { bold, green, yellow } = kleur;
 
 // https://developers.facebook.com/docs/instagram/platform/instagram-api/content-publishing
 export async function uploadInstagram(
-  envVars: EnvVars,
-  settings: PostSettings,
-  firebaseFileInfos: FirebaseFileInfo[],
+  client: InstagramClient,
+  settings: PostsSettings,
+  firebaseFileInfos: FirebaseFileInfo[][],
   dev: boolean,
 ) {
-  const USER_ID = envVars.instagramUserId;
-  const ACCESS_TOKEN = envVars.instagramAccessToken;
-
-  const { postType, bodyText, fileInfos } = settings;
-
   if (dev) {
     return "DEV MODE INSTAGRAM";
   }
+
+  const { posts } = settings;
+
+  const publishContainerIds: string[] = [];
+  const statuses: InstagramStatus[] = [];
+
+  // there's no thread/reply on IG, so only use the first post from the list
+  const post = posts[0];
+  const { postType, bodyText, fileInfos } = post;
 
   // REVIEW: should be automatically detected and handled
   if (postType === "text") {
@@ -54,133 +79,140 @@ export async function uploadInstagram(
     return;
   }
 
-  let publishData: InstagramPublishData;
-
   if (fileInfos.length === 1) {
     // 1. single media post
     const { filename, altText } = fileInfos[0];
     console.log(`Creating a media container for ${yellow(filename)}`);
     const ext = path.extname(filename).toLowerCase().slice(1);
-    const mediaContainerID = await createMediaContainer(USER_ID, {
-      ...(INSTAGRAM_VIDEO_FORMATS.includes(ext) ? { media_type: "REELS" } : {}),
-      // ...(INSTAGRAM_VIDEO_FORMATS.includes(ext) ? { media_type: "VIDEO" } : {}),
-      // NOTE: IG API doc says, REELS should have video_url, but got an error with missing image_url
-      // terrible, terrible API to use..
-      image_url: firebaseFileInfos[0].downloadUrl,
-      // ...(INSTAGRAM_IMAGE_FORMATS.includes(ext)
-      //   ? { image_url: downloadUrls[0] }
-      //   : INSTAGRAM_VIDEO_FORMATS.includes(ext)
-      //     ? { video_url: downloadUrls[0] }
-      //     : {}),
-      caption: bodyText,
-      access_token: ACCESS_TOKEN,
-    });
-    console.log(`Media container created. id: ${green(mediaContainerID)}`);
-    publishData = {
-      creation_id: mediaContainerID,
-      access_token: ACCESS_TOKEN,
-    };
+    const result = await handleAsync(
+      INSTAGRAM_IMAGE_FORMATS.includes(ext)
+        ? client.createImageContainer(
+            firebaseFileInfos[0][0].downloadUrl,
+            bodyText,
+            {},
+          )
+        : client.createVideoContainer(
+            firebaseFileInfos[0][0].downloadUrl,
+            bodyText,
+            {},
+          ),
+    );
+    const containerId = ensureData(
+      result,
+      "Error creating media container on Instagram",
+    );
+    console.log(`Media container created. id: ${green(containerId)}`);
+    publishContainerIds.push(containerId);
+    await checkContainerStatus(client, containerId);
   } else {
     // 2. carousel post
-    const mediaContainerIDs: string[] = [];
-    console.log("Uploading media files to Firebase Storage..");
-    // for (let i = 0; i < filenames.length; i++) {
+    const mediaContainerIds: string[] = [];
     for (let i = 0; i < fileInfos.length; i++) {
       const { filename, altText } = fileInfos[i];
-      // 2.a. create item container IDs
+      // 3.a. create item container IDs
       console.log(`Creating a media container for ${yellow(filename)}`);
       const ext = path.extname(filename).toLowerCase().slice(1);
-      const mediaContainerID = await createMediaContainer(USER_ID, {
-        is_carousel_item: true,
-        ...(INSTAGRAM_VIDEO_FORMATS.includes(ext)
-          ? { media_type: "VIDEO" }
-          : {}),
-        // image_url: downloadUrls[i],
-        ...(INSTAGRAM_IMAGE_FORMATS.includes(ext)
-          ? { image_url: firebaseFileInfos[i].downloadUrl }
-          : { video_url: firebaseFileInfos[i].downloadUrl }),
-        caption: bodyText,
-        access_token: ACCESS_TOKEN,
-      });
-      mediaContainerIDs.push(mediaContainerID);
-      console.log(`Media container created. id: ${green(mediaContainerID)}`);
+      const result = await handleAsync(
+        INSTAGRAM_IMAGE_FORMATS.includes(ext)
+          ? client.createImageContainer(
+              firebaseFileInfos[0][i].downloadUrl,
+              "",
+              {
+                isCarouselItem: true,
+              },
+            )
+          : client.createVideoContainer(
+              firebaseFileInfos[0][i].downloadUrl,
+              "",
+              {
+                isCarouselItem: true,
+              },
+            ),
+      );
+      const containerId = ensureData(
+        result,
+        "Error creating carousel item on Instagram",
+      );
+      mediaContainerIds.push(containerId);
+      console.log(`Media container created. id: ${green(containerId)}`);
     }
 
-    for (const containerId of mediaContainerIDs) {
-      await checkContainerStatus({
-        creation_id: containerId,
-        access_token: ACCESS_TOKEN,
-      });
+    // TODO: this is blocking - what if later items finish first?
+    // use while loop and run it until all returns "FINISHED",
+    // if any one of them returns "ERROR", throw error.
+    for (const containerId of mediaContainerIds) {
+      await checkContainerStatus(client, containerId);
     }
 
-    // 2.c. create carousel media container ID
+    // 3.c. create carousel media container ID
     console.log(
-      `Creating a carousel container for ${green(mediaContainerIDs.join(","))}`,
+      `Creating a carousel container for ${green(mediaContainerIds.join(","))}`,
     );
-    const carouselContainerID = await createMediaContainer(USER_ID, {
-      media_type: "CAROUSEL",
-      children: mediaContainerIDs.join(","),
-      caption: bodyText,
-      access_token: ACCESS_TOKEN,
-    });
-    publishData = {
-      creation_id: carouselContainerID,
-      access_token: ACCESS_TOKEN,
-    };
+    const result = await handleAsync(
+      client.createCarouselContainer(mediaContainerIds, bodyText),
+    );
+    const carouselContainerID = ensureData(
+      result,
+      "Error creating carousel container on Instagram",
+    );
+    publishContainerIds.push(carouselContainerID);
+
+    // media container may not be immedidiately ready to publish. (ie. big files)
+    // per IG API: query a container's status once per minute, for no more than 5 minutes.
+    await checkContainerStatus(client, carouselContainerID);
+
     console.log(
       `Carousel container created. id: ${green(carouselContainerID)}`,
     );
   }
 
-  await checkContainerStatus(publishData);
-
   console.log(`Publishing on ${bold("Instagram")}..`);
-  const status = await axios
-    .post(`${INSTAGRAM_API_URL}/${USER_ID}/media_publish`, null, {
-      // .post(`${FACEBOOK_API_URL}/media_publish`, null, {
-      params: publishData,
-    })
-    .then(async (res) => {
-      console.log(`Published on ${bold("Instagram")}`);
-      // res.data.id is mediaId
-      return res.data;
+  const statusId = await client
+    .publish(publishContainerIds[0])
+    .then(async (id) => {
+      console.log(`Published on ${bold("Instagram")}. id: ${green(id)}`);
+      return id;
     })
     .catch((e) => {
-      console.error(`Error publishing on Instagram ${e}`);
-      if (e.response?.data) {
-        console.error(e.response.data);
-      }
+      // console.error(e.response?.data);
+      throw new Error(`Error publishing on Instagram \n${e}`);
     });
-  return status;
+
+  statuses.push({ id: statusId });
+
+  return statuses;
 }
 
+/**
+ * Check the uploaded container status. Used before publishing. Usually, any file takes some seconds before ready,
+ * so there is a 5 second wait before calling API.
+ * @param client - InstagramClient
+ * @param creationId -
+ * @param maxRetries - default: 10
+ * @param interval -  default: 30 seconds
+ */
 async function checkContainerStatus(
-  publishData: InstagramPublishData,
-  maxRetries = 5,
+  client: InstagramClient,
+  creationId: string,
+  maxRetries = 10,
   interval = 1000 * 30,
 ) {
-  const { creation_id, access_token } = publishData;
   let retries = 0;
+
+  // wait 3 sec before querying container status to reduce API calls.
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 
   while (retries < maxRetries) {
     try {
-      const response = await axios.get(`${INSTAGRAM_API_URL}/${creation_id}`, {
-        params: {
-          fields: "status,error_message",
-          access_token,
-        },
-      });
-      // FIX:
-      console.log(response.data); //TEST:
-
-      const { status, error_message } = response.data;
+      const { status, error_message, id } =
+        await client.checkContainerStatus(creationId);
       console.log(`Container status: ${status} (try ${retries + 1})`);
 
       if (status === "FINISHED") {
-        console.log(`${green(creation_id)} is ready to publish.`);
-        return;
+        console.log(`${green(creationId)} is ready to publish.`);
+        return "FINISHED";
       } else if (status === "ERROR") {
-        console.error(`Media container failed.`);
+        console.error(`Media container failed: ${error_message}`);
         throw new Error(error_message);
       }
 
@@ -188,27 +220,70 @@ async function checkContainerStatus(
       if (retries < maxRetries) {
         await new Promise((resolve) => setTimeout(resolve, interval));
       }
-    } catch (e) {
-      console.log(e);
-      throw new Error(`Error checking container status: \n${e}`);
+    } catch (e: any) {
+      throw new Error(`Error checking container status: ${e}`);
     }
   }
 
   throw new Error(`Max retries reached. Media is not ready to publish.`);
 }
 
-// upload image and get media container ID
-async function createMediaContainer(
-  userId: string,
-  mediaData: InstagramMediaData,
+// https://developers.facebook.com/docs/threads/insights
+export async function getInstagramStats(
+  client: InstagramClient,
+  lastStats: InstagramStats,
 ) {
-  return await axios
-    .post(`${INSTAGRAM_API_URL}/${userId}/media`, null, { params: mediaData })
-    .then((res) => {
-      // return media container ID
-      return res.data.id;
-    })
-    .catch((e) => {
-      throw new Error(`Error creating media container on Instagram \n${e}`);
-    });
+  const userDataResult = await handleAsync<InstagramUserData[]>(
+    client.getUserData(1),
+  );
+  const userData = ensureData(
+    userDataResult,
+    "Error retrieving user data on Threads",
+  );
+
+  const { id: mediaId, text, permalink } = userData[0];
+
+  const postInsightsResult = await handleAsync<InstagramStats>(
+    client.getPostInsights(mediaId),
+  );
+  const curStats = ensureData(
+    postInsightsResult,
+    "Error retrieving post insights on Threads",
+  );
+
+  const keys = Object.keys(diffStats) as (keyof InstagramStats)[];
+  for (const key of keys) {
+    if (curStats[key] && lastStats[key]) {
+      diffStats[key] = curStats[key] - lastStats[key];
+    } else {
+      diffStats[key] = curStats[key];
+    }
+  }
+
+  const { engagement, impressions, reach } = diffStats;
+
+  console.log(`Latest ${bold("Threads")} (${green(permalink)}) stats`);
+  text && console.log(`Text: ${text}`);
+  // const viewsStr = `Views: ${green(views)}`;
+  const engagementStr = engagement
+    ? `Engagement: ${green(getDiffStat(lastStats.engagement, engagement))}`
+    : "";
+  const impressionsStr = impressions
+    ? `Impressions: ${green(getDiffStat(lastStats.impressions, impressions))}`
+    : "";
+  const reachStr = reach
+    ? `Reach: ${green(getDiffStat(lastStats.reach, reach))}`
+    : "";
+
+  const hasUpdates = [engagementStr, impressionsStr, reachStr].some(
+    (str) => str.length > 0,
+  );
+  hasUpdates
+    ? console.log(engagementStr, impressionsStr, reachStr)
+    : console.log("No updates found");
+
+  // update last stat to current stat
+  for (const key of keys) {
+    lastStats[key] = curStats[key];
+  }
 }

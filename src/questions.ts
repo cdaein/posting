@@ -18,7 +18,7 @@ const userConfig = await loadConfig(defaultConfig, "../user.config.json");
 
 const platforms: Choice[] = [
   { title: "Bluesky", value: "bluesky" },
-  // { title: "Instagram", value: "instagram", disabled: true },
+  { title: "Instagram", value: "instagram" },
   { title: "Mastodon", value: "mastodon" },
   { title: "Threads", value: "threads" },
   { title: "Twitter", value: "twitter" },
@@ -79,6 +79,29 @@ export const firebaseAuthQuestions: PromptObject[] = [
     type: "text",
     name: "FIREBASE_PASSWORD",
     message: "Firebase Password (of app user, not admin)",
+  },
+];
+
+export const instagramAuthQuestions: PromptObject[] = [
+  {
+    type: "text",
+    name: "INSTAGRAM_APP_ID",
+    message: "Instagram App ID",
+  },
+  {
+    type: "text",
+    name: "INSTAGRAM_APP_SECRET",
+    message: "Instagram App Secret",
+  },
+  {
+    type: "text",
+    name: "INSTAGRAM_USER_ID",
+    message: "Instagram User ID (number)",
+  },
+  {
+    type: "text",
+    name: "INSTAGRAM_ACCESS_TOKEN",
+    message: "Instagram Access Token (long-lived token)",
   },
 ];
 

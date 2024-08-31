@@ -1,27 +1,28 @@
 import { Command } from "commander";
+import dotenv from "dotenv";
 import kleur from "kleur";
-import path from "node:path";
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import prompts, { Choice, PromptObject } from "prompts";
+import { defaultConfig } from "../constants";
 import {
   blueskyAuthQuestions,
   firebaseAuthQuestions,
+  instagramAuthQuestions,
   mastodonAuthQuestions,
   threadsAuthQuestions,
   twitterAuthQuestions,
   watchDirQuestionFn,
 } from "../questions";
-import { fileURLToPath } from "node:url";
-import dotenv from "dotenv";
 import { loadConfig } from "../utils";
-import { defaultConfig } from "../constants";
 
 const { red } = kleur;
 
 const platforms: Choice[] = [
   { title: "Bluesky", value: "bluesky" },
   { title: "Firebase", value: "firebase" },
-  // { title: "Instagram", value: "instagram", disabled: true },
+  { title: "Instagram", value: "instagram" },
   { title: "Mastodon", value: "mastodon" },
   { title: "Threads", value: "threads" },
   { title: "Twitter", value: "twitter" },
@@ -141,6 +142,20 @@ It is a user account you need to make from Firebase Console.
           );
           for (const key of Object.keys(firebaseAuthData)) {
             newEnv[key] = firebaseAuthData[key];
+          }
+          updateEnv(envPath, newEnv);
+        }
+        if (platform === "instagram") {
+          console.log(`
+Don't forget to also setup Firebase as Instagram API relies on
+public URLs for media files.
+`);
+          const instagramAuthData = await prompts(
+            instagramAuthQuestions,
+            promptOptions,
+          );
+          for (const key of Object.keys(instagramAuthData)) {
+            newEnv[key] = instagramAuthData[key];
           }
           updateEnv(envPath, newEnv);
         }

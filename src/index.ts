@@ -1,15 +1,15 @@
 import { program } from "commander";
 import dotenv from "dotenv";
+import figlet from "figlet";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { description, version } from "../package.json";
+import { initCreateCommand } from "./commands/create";
+import { initSetupCommand } from "./commands/setup";
+import { initWatchCommand } from "./commands/watch";
 import { defaultConfig } from "./constants";
 import { EnvVars } from "./types";
 import { loadConfig, resolvePath } from "./utils";
-import figlet from "figlet";
-import { initSetupCommand } from "./commands/setup";
-import { initCreateCommand } from "./commands/create";
-import { initWatchCommand } from "./commands/watch";
 
 // access .env from anywhere (when calling as global command)
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -27,8 +27,10 @@ const envVars: EnvVars = {
   firebaseEmail: process.env.FIREBASE_EMAIL!,
   firebasePassword: process.env.FIREBASE_PASSWORD!,
   //
-  instagramUserId: process.env.INSTAGRAM_USER_ID!,
-  instagramAccessToken: process.env.INSTAGRAM_ACCESS_TOKEN!,
+  instagramAppId: process.env.INSTAGRAM_APP_ID,
+  instagramAppSecret: process.env.INSTAGRAM_APP_SECRET,
+  instagramUserId: process.env.INSTAGRAM_USER_ID,
+  instagramAccessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
   //
   mastodonInstanceUrl: process.env.MASTODON_INSTANCE_URL,
   mastodonAccessToken: process.env.MASTODON_ACCESS_TOKEN,
