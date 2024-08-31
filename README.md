@@ -40,12 +40,11 @@ If you pass `posting watch --stats` option, it checks stats (like counts, etc.) 
   - Bluesky doesn't support video.
 - Mastodon
   - Getting API Key is very easy. Just go to your instance, click Preferences > Developement. Create a New Application with read/write access.
-- ~~Instagram~~
-  - IG API doesn't work as I expect it to. It's one of the worst APIs I've ever had to deal with.
-- Threads
-  - Threads API isn't much better. I wish you good luck with dealing with incomplete API doc and generating and replacing Access Tokens.
-  - When generating Authourization Code, include in the URL parameters: `scope=threads_basic,threads_content_publish,threads_manage_replies,threads_read_replies,threads_manage_insights`
-  - Threads API uses `curl` to download media files so it requires public URLs (no local uploading) for file attachments. Posting currently relies on Firebase Storage for this, which means you will need Firebase account. If posting is sucessful, the uploaded file is deleted from Firebase. Free tier of Firebase should be good enough in most cases.
+- Instagram/Threads
+  - I wish you good luck with dealing with incomplete API doc and generating and replacing Access Tokens.
+  - Instagram scope: `business_basic,business_manage_messages,business_manage_comments,business_content_publish`
+  - Threads scope: `threads_basic,threads_content_publish,threads_manage_replies,threads_read_replies,threads_manage_insights`
+  - IG/Threads uses `curl` to download media files so it requires public URLs (no local uploading) for file attachments. Posting currently relies on Firebase Storage for this, which means you will need Firebase account. If posting is sucessful, the uploaded file is deleted from Firebase. Free tier of Firebase should be good enough in most cases.
 - Twitter
   - Get free Developer account. Make sure to give read/write access when creating Access Token.
 
