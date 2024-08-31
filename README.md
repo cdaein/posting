@@ -45,6 +45,7 @@ If you pass `posting watch --stats` option, it checks stats (like counts, etc.) 
   - Instagram scope: `business_basic,business_manage_messages,business_manage_comments,business_content_publish`
   - Threads scope: `threads_basic,threads_content_publish,threads_manage_replies,threads_read_replies,threads_manage_insights`
   - IG/Threads uses `curl` to download media files so it requires public URLs (no local uploading) for file attachments. Posting currently relies on Firebase Storage for this, which means you will need Firebase account. If posting is sucessful, the uploaded file is deleted from Firebase. Free tier of Firebase should be good enough in most cases.
+  - Single media IG post is also published as IG story. For carousel post, only the first media is also published as IG story.
 - Twitter
   - Get free Developer account. Make sure to give read/write access when creating Access Token.
 

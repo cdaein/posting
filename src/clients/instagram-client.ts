@@ -157,6 +157,26 @@ export class InstagramClient {
       });
   }
 
+  async createStoriesContainer(opt?: {
+    image_url?: string;
+    video_url?: string;
+  }): Promise<string> {
+    const mediaData: InstagramMediaData = {
+      media_type: "STORIES",
+      ...opt,
+      access_token: this.tokens.accessToken,
+    };
+
+    return axios
+      .post(`${this.INSTAGRAM_API_URL}/${this.tokens.userId}/media`, null, {
+        params: mediaData,
+      })
+      .then((res) => {
+        // return media container ID
+        return res.data.id;
+      });
+  }
+
   async createCarouselContainer(childrenIds: string[], caption = "") {
     if (childrenIds.length > this.MAX_ATTACHMENTS) {
       throw new Error(

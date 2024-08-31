@@ -81,41 +81,64 @@ export async function uploadInstagram(
 
   if (fileInfos.length === 1) {
     // 1. single media post
-    const { filename, altText } = fileInfos[0];
-    console.log(`Creating a media container for ${yellow(filename)}`);
+    const { filename } = fileInfos[0];
     const ext = path.extname(filename).toLowerCase().slice(1);
-    const result = await handleAsync(
-      INSTAGRAM_IMAGE_FORMATS.includes(ext)
-        ? client.createImageContainer(
-            firebaseFileInfos[0][0].downloadUrl,
-            bodyText,
-            {},
-          )
-        : client.createVideoContainer(
-            firebaseFileInfos[0][0].downloadUrl,
-            bodyText,
-            {},
-          ),
-    );
+    {
+      console.log(`Creating a media container for ${yellow(filename)}`);
+      const result = await handleAsync(
+        INSTAGRAM_IMAGE_FORMATS.includes(ext)
+          ? client.createImageContainer(
+              firebaseFileInfos[0][0].downloadUrl,
+              bodyText,
+              {},
+            )
+          : client.createVideoContainer(
+              firebaseFileInfos[0][0].downloadUrl,
+              bodyText,
+              {},
+            ),
+      );
 
-    const containerId = ensureData(
-      result,
-      "Error creating media container on Instagram",
-    );
-    console.log(`Media container created. id: ${green(containerId)}`);
-    publishContainerIds.push(containerId);
-    await checkContainerStatus(client, containerId);
+      const containerId = ensureData(
+        result,
+        "Error creating media container on Instagram",
+      );
+      console.log(`Media container created. id: ${green(containerId)}`);
+      publishContainerIds.push(containerId);
+      await checkContainerStatus(client, containerId);
+    }
+
+    // 1.b. stories container
+    {
+      console.log(`Creating a stories container for ${yellow(filename)}`);
+      const result = await handleAsync(
+        client.createStoriesContainer(
+          INSTAGRAM_IMAGE_FORMATS.includes(ext)
+            ? { image_url: firebaseFileInfos[0][0].downloadUrl }
+            : { video_url: firebaseFileInfos[0][0].downloadUrl },
+        ),
+      );
+
+      const containerId = ensureData(
+        result,
+        "Error creating stories container on Instagram",
+      );
+      console.log(`Stories container created. id: ${green(containerId)}`);
+      publishContainerIds.push(containerId);
+      await checkContainerStatus(client, containerId);
+    }
   } else {
     // 2. carousel post
     const mediaContainerIds: string[] = [];
     for (let i = 0; i < fileInfos.length; i++) {
-      const { filename, altText } = fileInfos[i];
+      const { filename } = fileInfos[i];
       // 3.a. create item container IDs
       console.log(`Creating a media container for ${yellow(filename)}`);
       const ext = path.extname(filename).toLowerCase().slice(1);
       const result = await handleAsync(
         INSTAGRAM_IMAGE_FORMATS.includes(ext)
           ? client.createImageContainer(
+              // index 0 b/c instagram doesn't have "reply to thread"
               firebaseFileInfos[0][i].downloadUrl,
               "",
               {
@@ -136,6 +159,26 @@ export async function uploadInstagram(
       );
       mediaContainerIds.push(containerId);
       console.log(`Media container created. id: ${green(containerId)}`);
+
+      // 3.b. stories container (only for the first in carousel)
+      if (i === 0) {
+        console.log(`Creating a stories container for ${yellow(filename)}`);
+        const result = await handleAsync(
+          client.createStoriesContainer(
+            INSTAGRAM_IMAGE_FORMATS.includes(ext)
+              ? { image_url: firebaseFileInfos[0][i].downloadUrl }
+              : { video_url: firebaseFileInfos[0][i].downloadUrl },
+          ),
+        );
+
+        const containerId = ensureData(
+          result,
+          "Error creating stories container on Instagram",
+        );
+        console.log(`Stories container created. id: ${green(containerId)}`);
+        publishContainerIds.push(containerId);
+        await checkContainerStatus(client, containerId);
+      }
     }
 
     // TODO: this is blocking - what if later items finish first?
@@ -168,18 +211,20 @@ export async function uploadInstagram(
   }
 
   console.log(`Publishing on ${bold("Instagram")}..`);
-  const statusId = await client
-    .publish(publishContainerIds[0])
-    .then(async (id) => {
-      console.log(`Published on ${bold("Instagram")}. id: ${green(id)}`);
-      return id;
-    })
-    .catch((e) => {
-      // console.error(e.response?.data);
-      throw new Error(`Error publishing on Instagram \n${e}`);
-    });
+  for (let i = 0; i < publishContainerIds.length; i++) {
+    const statusId = await client
+      .publish(publishContainerIds[i])
+      .then(async (id) => {
+        console.log(`Published on ${bold("Instagram")}. id: ${green(id)}`);
+        return id;
+      })
+      .catch((e) => {
+        // console.error(e.response?.data);
+        throw new Error(`Error publishing on Instagram \n${e}`);
+      });
 
-  statuses.push({ id: statusId });
+    statuses.push({ id: statusId });
+  }
 
   return statuses;
 }
