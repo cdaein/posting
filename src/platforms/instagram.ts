@@ -274,7 +274,8 @@ async function checkContainerStatus(
   throw new Error(`Max retries reached. Media is not ready to publish.`);
 }
 
-// https://developers.facebook.com/docs/threads/insights
+// REVIEW: is it only for FB login?
+// https://developers.facebook.com/docs/instagram-platform/instagram-api-with-facebook-login/insights
 export async function getInstagramStats(
   client: InstagramClient,
   lastStats: InstagramStats,
@@ -284,7 +285,7 @@ export async function getInstagramStats(
   );
   const userData = ensureData(
     userDataResult,
-    "Error retrieving user data on Threads",
+    "Error retrieving user data on Instagram",
   );
 
   const { id: mediaId, text, permalink } = userData[0];
@@ -294,7 +295,7 @@ export async function getInstagramStats(
   );
   const curStats = ensureData(
     postInsightsResult,
-    "Error retrieving post insights on Threads",
+    "Error retrieving post insights on Instagram",
   );
 
   const keys = Object.keys(diffStats) as (keyof InstagramStats)[];
@@ -308,7 +309,7 @@ export async function getInstagramStats(
 
   const { engagement, impressions, reach } = diffStats;
 
-  console.log(`Latest ${bold("Threads")} (${green(permalink)}) stats`);
+  console.log(`Latest ${bold("Instagram")} (${green(permalink)}) stats`);
   text && console.log(`Text: ${text}`);
   // const viewsStr = `Views: ${green(views)}`;
   const engagementStr = engagement
