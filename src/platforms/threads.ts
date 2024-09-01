@@ -101,7 +101,6 @@ export async function uploadThreads(
       await checkContainerStatus(client, containerId);
     } else {
       if (fileInfos.length === 1) {
-        // NOTE: Threads *has* alt text, but it's not documented on API..
         const { filename, altText } = fileInfos[0];
         // 2. single media post
         console.log(`Creating a media container for ${yellow(filename)}`);
@@ -110,11 +109,13 @@ export async function uploadThreads(
           THREADS_IMAGE_FORMATS.includes(ext)
             ? client.createImageContainer(
                 firebaseFileInfos[j][0].downloadUrl,
+                { alt_text: altText },
                 bodyText,
                 j !== 0 ? { replyToId: statuses[j - 1].id } : {},
               )
             : client.createVideoContainer(
                 firebaseFileInfos[j][0].downloadUrl,
+                { alt_text: altText },
                 bodyText,
                 j !== 0 ? { replyToId: statuses[j - 1].id } : {},
               ),
@@ -138,6 +139,7 @@ export async function uploadThreads(
             THREADS_IMAGE_FORMATS.includes(ext)
               ? client.createImageContainer(
                   firebaseFileInfos[j][i].downloadUrl,
+                  { alt_text: altText },
                   "",
                   {
                     isCarouselItem: true,
@@ -146,6 +148,7 @@ export async function uploadThreads(
                 )
               : client.createVideoContainer(
                   firebaseFileInfos[j][i].downloadUrl,
+                  { alt_text: altText },
                   "",
                   {
                     isCarouselItem: true,
@@ -175,6 +178,8 @@ export async function uploadThreads(
         const result = await handleAsync(
           client.createCarouselContainer(
             mediaContainerIds,
+            // REVIEW: how to handle alt text for carousel?
+            { alt_text: "" },
             bodyText,
             j !== 0 ? { replyToId: statuses[j - 1].id } : {},
           ),

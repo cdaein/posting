@@ -127,6 +127,7 @@ export class ThreadsClient {
 
   async createImageContainer(
     imageUrl: string,
+    data: { alt_text: string },
     text = "",
     opt?: { replyToId?: string; isCarouselItem?: boolean },
   ): Promise<string> {
@@ -144,7 +145,7 @@ export class ThreadsClient {
         opt?.replyToId
           ? `${this.THREADS_API_URL}/me/threads`
           : `${this.THREADS_API_URL}/${this.tokens.userId}/threads`,
-        null,
+        data,
         {
           params: mediaData,
         },
@@ -157,6 +158,7 @@ export class ThreadsClient {
 
   async createVideoContainer(
     videoUrl: string,
+    data: { alt_text: string },
     text = "",
     opt?: { replyToId?: string; isCarouselItem?: boolean },
   ): Promise<string> {
@@ -174,7 +176,7 @@ export class ThreadsClient {
         opt?.replyToId
           ? `${this.THREADS_API_URL}/me/threads`
           : `${this.THREADS_API_URL}/${this.tokens.userId}/threads`,
-        null,
+        data,
         {
           params: mediaData,
         },
@@ -187,6 +189,7 @@ export class ThreadsClient {
 
   async createCarouselContainer(
     childrenIds: string[],
+    data: { alt_text: string },
     text = "",
     opt?: { replyToId?: string },
   ) {
@@ -209,7 +212,7 @@ export class ThreadsClient {
         opt?.replyToId
           ? `${this.THREADS_API_URL}/me/threads`
           : `${this.THREADS_API_URL}/${this.tokens.userId}/threads`,
-        null,
+        data,
         {
           params: mediaData,
         },
