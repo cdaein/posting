@@ -179,6 +179,7 @@ export async function uploadPost(
         await uploadBluesky(blueskyAgent!, postFolderPath, settings, dev);
         uploaded.bluesky = true;
       } else if (platform === "instagram" && firebaseReady) {
+        console.log(`\t${bold("Instagram")}`);
         await uploadInstagram(
           instagramClient!,
           settings,

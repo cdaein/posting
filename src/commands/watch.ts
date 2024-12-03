@@ -14,7 +14,11 @@ import {
   getBlueskyStats,
   initBlueskyAgent,
 } from "../platforms/bluesky";
-import { instagramLastStats, InstagramStats } from "../platforms/instagram";
+import {
+  getInstagramStats,
+  instagramLastStats,
+  InstagramStats,
+} from "../platforms/instagram";
 import {
   getMastodonStats,
   initMastodonClient,
@@ -113,7 +117,6 @@ export function initWatchCommand(
               }
             }
             if (instagramClient) {
-              // TODO:
               // try {
               //   await getInstagramStats(instagramClient, lastStats.instagram);
               // } catch (e) {
